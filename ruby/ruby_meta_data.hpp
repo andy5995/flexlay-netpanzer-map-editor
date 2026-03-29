@@ -19,9 +19,9 @@
 #ifndef HEADER_RUBY_META_DATA_HXX
 #define HEADER_RUBY_META_DATA_HXX
 
+#include "ruby.h"
 #include <ClanLib/signals.h>
 #include <ClanLib/Display/color.h>
-#include "ruby.h"
 #include "meta_data.hpp"
 #include "objmap_object.hpp"
 #include "object_brush.hpp"

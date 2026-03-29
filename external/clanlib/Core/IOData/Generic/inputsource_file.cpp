@@ -29,6 +29,7 @@
 
 #include <iostream>
 #include <string.h>
+#include <unistd.h>
 #include "Core/precomp.h"
 
 #ifdef WIN32

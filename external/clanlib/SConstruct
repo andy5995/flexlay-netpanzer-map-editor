@@ -1,6 +1,6 @@
 # -*- python -*-
 
-env = Environment(CPPPATH=['API', '.'])
+env = Environment(CPPPATH=['API', '.'], CCFLAGS=['-fPIC'])
     
 #    CXXFLAGS  = env['CXXFLAGS'] + clanLib_env['CCFLAGS'],
 #    LINKFLAGS = clanLib_env['LINKFLAGS'],
@@ -167,9 +167,9 @@ clanDisplay = env.StaticLibrary(
     'Display/Providers/pcx_provider.cpp',
     'Display/Providers/pcx_provider_generic.cpp',
     'Display/Providers/pcx_provider_generic.h',
-    'Display/Providers/png_provider.cpp',
-    'Display/Providers/png_provider_generic.h',
-    'Display/Providers/png_provider_generic.cpp',
+#    'Display/Providers/png_provider.cpp',
+#    'Display/Providers/png_provider_generic.h',
+#    'Display/Providers/png_provider_generic.cpp',
     'Display/Providers/provider_factory.cpp',
     'Display/Providers/provider_type.cpp',
     'Display/Providers/targa_provider.cpp',

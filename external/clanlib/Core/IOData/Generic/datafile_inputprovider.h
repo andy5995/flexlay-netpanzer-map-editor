@@ -142,9 +142,9 @@ protected:
 		void insert(const std::string &resource_id, int data_pos, int data_size)
 		{
 			cache.insert(
-				std::make_pair<std::string const, std::pair<int, int> >(
+				std::make_pair(
 				resource_id,
-				std::make_pair<int,int>(data_pos, data_size)));
+				std::make_pair(data_pos, data_size)));
 		}
 
 	private:
