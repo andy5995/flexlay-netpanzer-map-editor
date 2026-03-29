@@ -101,6 +101,19 @@ For multi-core systems, parallel builds are significantly faster:
 - **4 cores**: ~3-4x faster  
 - **8+ cores**: ~6-8x faster (diminishing returns)
 
+### Keeping Source Clean
+
+Build artifacts (`.o`, `.a`, `.so` files) are created alongside source files. To keep the source tree clean for version control, add common build outputs to your `.gitignore` (already done in the repo):
+
+```
+*.o
+*.a
+*.so
+.sconsign.dblite
+```
+
+All build artifacts are already ignored by git. You can safely rebuild without cluttering your working directory in version control.
+
 ## Troubleshooting
 
 ### Build Fails with "pkg-config not found"
