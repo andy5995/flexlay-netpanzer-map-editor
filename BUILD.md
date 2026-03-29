@@ -148,7 +148,7 @@ The bundled ClanLib has been patched for modern C++ (C++17) compatibility:
 2. **datafile_inputprovider.h**: Removed explicit template parameters from `std::make_pair`
 3. **inputsource_file.cpp**: Added `#include <unistd.h>` for `getcwd()`
 4. **cl_assert.h**: Added `#include <cstddef>` for `NULL`
-5. **Disabled PNG provider**: Modern libpng not compatible with old ClanLib code
+5. **png_provider_generic.cpp**: Updated `setjmp` call from `png_ptr->jmpbuf` to `png_jmpbuf(png_ptr)` for libpng 1.4+ compatibility
 
 These patches are permanent modifications to the bundled code and are required for building with modern C++ toolchains.
 

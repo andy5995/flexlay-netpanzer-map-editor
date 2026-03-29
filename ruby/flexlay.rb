@@ -1,4 +1,4 @@
-class TilemapLayer
+class Flexlay_wrap::TilemapLayer
   alias orig_get_metadata get_metadata
   alias orig_set_metadata set_metadata
 
@@ -20,7 +20,7 @@ class TilemapLayer
   end
 end
 
-class EditorMap
+class Flexlay_wrap::EditorMap
   alias orig_get_metadata get_metadata
   alias orig_set_metadata set_metadata
 
@@ -41,7 +41,7 @@ class EditorMap
   end
 end
 
-class ObjMapObject
+class Flexlay_wrap::ObjMapObject
   def get_data()
     return get_ruby_object(get_metadata())
   end
@@ -52,13 +52,13 @@ class ObjMapObject
 end
 
 
-class Icon
+class Flexlay_wrap::Icon
   def set_callback(func)
     connect(sig_clicked(), func)
   end
 end
 
-class Menu
+class Flexlay_wrap::Menu
   alias_method :orig_add_item, :add_item
 
   def add_item(*params)
@@ -76,7 +76,7 @@ class Menu
   end
 end
 
-class CL_Menu
+class Flexlay_wrap::CL_Menu
   def add_item(name, func)
     item = create_item(name)
     connect(item.sig_clicked(), func)
