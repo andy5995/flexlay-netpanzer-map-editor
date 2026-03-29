@@ -70,7 +70,7 @@ jobs:
           swig \
           libx11-dev \
           libxmu-dev \
-          libxf86vm-dev \
+          libxxf86vm-dev \
           libxrandr-dev \
           libgl1-mesa-dev \
           libglu1-mesa-dev \

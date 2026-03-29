@@ -14,7 +14,7 @@ Install build tools and development libraries:
 **Ubuntu/Debian:**
 ```bash
 sudo apt install build-essential libboost-dev ruby-dev scons swig \
-    libx11-dev libxmu-dev libxf86vm-dev libxrandr-dev \
+    libx11-dev libxmu-dev libxxf86vm-dev libxrandr-dev \
     libgl1-mesa-dev libglu1-mesa-dev libpng-dev libjpeg-dev
 ```
 
