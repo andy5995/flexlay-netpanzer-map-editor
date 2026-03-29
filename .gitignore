@@ -9,3 +9,11 @@
 /ruby/flexlay_ruby_wrap.cpp
 /ruby/flexlay_ruby_wrap.os
 /ruby/ruby_functor.os
+/ruby/ruby_converter.os
+/ruby/ruby_meta_data.os
+/ruby/ruby_object.os
+/ruby/ruby_sexpr_parser.os
+/ruby/flexlay_wrap.so
+/external/clanlib/.sconsign.dblite
+build.log
+/out/

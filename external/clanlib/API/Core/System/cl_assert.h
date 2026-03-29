@@ -33,6 +33,8 @@
 #ifndef header_cl_assert
 #define header_cl_assert
 
+#include <cstddef>
+
 #ifdef CL_API_DLL
 #ifdef CL_CORE_EXPORT
 #define CL_API_CORE __declspec(dllexport)

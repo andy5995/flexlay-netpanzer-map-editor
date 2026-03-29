@@ -63,11 +63,25 @@ jobs:
         sudo apt remove -y firefox
         sudo apt upgrade -y
         sudo apt install -y \
+          build-essential \
           libboost-dev \
-          libclanlib-dev \
           ruby-dev \
           scons \
-          swig
+          swig \
+          libx11-dev \
+          libxmu-dev \
+          libxi-dev \
+          libxxf86vm-dev \
+          libxrandr-dev \
+          libgl1-mesa-dev \
+          libglu1-mesa-dev \
+          libpng-dev \
+          libjpeg-dev
+
+    - name: Build ClanLib
+      run: |
+        cd external/clanlib
+        scons
 
     - name: Build with scons
       run: |

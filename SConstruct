@@ -1,7 +1,20 @@
 # -*- python -*-
 
+import os
+
+# Detect number of CPUs for parallel builds
+try:
+    import multiprocessing
+    num_cpus = multiprocessing.cpu_count()
+except (ImportError, NotImplementedError):
+    num_cpus = 1
+
+# Set default parallelism if not specified
+if GetOption('num_jobs') == 1:  # Default value
+    SetOption('num_jobs', num_cpus)
+
 # Set to False to use local ClanLib instead of global one
-if True:
+if False:
     clanLib_env = Environment(LIBPATH=[])
     clanLib_env.ParseConfig("pkg-config --cflags --libs " +
                             "clanCore-1.0 clanDisplay-1.0 clanGL-1.0 clanSignals-1.0 clanGUI-1.0 clanGUIStyleSilver-1.0")

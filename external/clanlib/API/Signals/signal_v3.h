@@ -90,7 +90,7 @@ public:
 		for (SlotIterator slot_it = impl->slots.begin(); slot_it != impl->slots.end(); slot_it++)
 		{
 			Slot slot = *slot_it;
-			slot->add_signal_ref(this->owner);
+			slot->add_signal_ref(impl->owner);
 		}
 	}
 

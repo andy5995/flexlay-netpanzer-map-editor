@@ -2,9 +2,8 @@
 
 class CL_Component
 {
-private:
-	~CL_Component();
 public:
+	~CL_Component();
 	CL_Component(CL_Component* parent, CL_StyleManager* style = NULL);
         void show(bool show = true);
        	bool is_visible(bool check_parents = true);
@@ -129,9 +128,8 @@ CL_Sprite(
 
 class CL_Window : public CL_Component
 {
-private:
-	~CL_Window();
 public:
+	~CL_Window();
 	CL_Window(
 		const CL_Rect &pos,
 		const std::string &title,
@@ -142,9 +140,8 @@ public:
 
 class CL_Button : public CL_Component
 {
-private:
-	~CL_Button();
-public:	
+public:
+	~CL_Button();	
 	CL_Button(
 		const CL_Rect &pos,
 		const std::string &text,
@@ -157,9 +154,8 @@ public:
 
 class CL_Menu : public CL_Component
 {
-private:
-	~CL_Menu();
 public:
+	~CL_Menu();
 	CL_Menu(
 		const CL_Rect &rect,
 		CL_Component *parent,
@@ -176,9 +172,8 @@ public:
 
 class CL_MenuNode : public CL_Component
 {
-private:
+public:
 	~CL_MenuNode();
-//! Construction:
 public:
 	//: CL_MenuNode Constructor
 	CL_MenuNode(
