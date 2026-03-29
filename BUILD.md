@@ -1,5 +1,41 @@
 # Build Instructions
 
+## Easiest Way: AppImage via Docker
+
+The easiest way to build is using the `andy5995/linuxdeploy:v3-jammy` container
+(available on Docker Hub), which has all build tools and linuxdeploy pre-installed.
+This produces a self-contained AppImage in `out/`.
+
+```sh
+docker compose up
+```
+
+The AppImage requires `ruby` on the host system at runtime.
+
+> [!CAUTION]
+> The editor **will not function** without the netpanzer game data directory.
+> You must set `NETPANZER_DATADIR` to its location before launching:
+>
+> ```sh
+> NETPANZER_DATADIR=/path/to/netpanzer ./out/netpanzer-editor-0.1-x86_64.AppImage
+> ```
+>
+> The game data is not bundled in the AppImage and is not part of this
+> repository. It is typically installed with the netpanzer game package
+> (e.g. `sudo apt install netpanzer`) or built from source.
+
+### Testing changes to `make-appimage.sh`
+
+Use `docker-compose.dev.yml` to get an interactive shell inside the container:
+
+```sh
+docker compose -f docker-compose.dev.yml run --rm build
+```
+
+From there you can run `./make-appimage.sh` directly or step through it manually.
+
+---
+
 ## Prerequisites
 
 ### System Requirements

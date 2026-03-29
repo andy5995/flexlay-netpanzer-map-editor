@@ -16,3 +16,4 @@
 /ruby/flexlay_wrap.so
 /external/clanlib/.sconsign.dblite
 build.log
+/out/
