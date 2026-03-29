@@ -70,11 +70,12 @@ jobs:
           swig \
           libx11-dev \
           libxmu-dev \
+          libxf86vm-dev \
+          libxrandr-dev \
           libgl1-mesa-dev \
           libglu1-mesa-dev \
           libpng-dev \
-          libjpeg-dev \
-          libxrandr-dev
+          libjpeg-dev
 
     - name: Build ClanLib
       run: |
