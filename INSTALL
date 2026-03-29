@@ -16,7 +16,7 @@ Libraries:
   * Ruby development headers (ruby-dev)
   * Boost development headers (libboost-dev)
   * OpenGL/Mesa development headers
-  * X11 development headers
+  * X11 development headers (includes libx11, libxmu, libxi, libxxf86vm, libxrandr)
   * PNG and JPEG libraries
 
 On Ubuntu/Debian, install dependencies with:

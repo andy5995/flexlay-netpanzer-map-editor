@@ -18,13 +18,21 @@ sudo apt install build-essential libboost-dev ruby-dev scons swig \
     libgl1-mesa-dev libglu1-mesa-dev libpng-dev libjpeg-dev
 ```
 
-**CentOS/RHEL:**
+**Fedora/CentOS/RHEL:**
 ```bash
 sudo yum groupinstall "Development Tools"
-sudo yum install boost-devel ruby-devel ruby-devel scons swig \
-    libX11-devel libXmu-devel mesa-libGL-devel mesa-libGLU-devel \
-    libpng-devel libjpeg-turbo-devel libXrandr-devel
+sudo yum install boost-devel ruby-devel scons swig \
+    libX11-devel libXmu-devel libXi-devel libXxf86vm-devel libXrandr-devel \
+    mesa-libGL-devel mesa-libGLU-devel libpng-devel libjpeg-turbo-devel
 ```
+
+**X11 Dependencies:**
+The project requires several X11 extension libraries:
+- **libx11-dev/libX11-devel** - X11 core protocol
+- **libxmu-dev/libXmu-devel** - X11 Miscellaneous Utilities
+- **libxi-dev/libXi-devel** - X11 Input extensions (XInput)
+- **libxxf86vm-dev/libXxf86vm-devel** - X11 Video Mode extensions
+- **libxrandr-dev/libXrandr-devel** - X11 Resize and Rotate extensions
 
 ## Building
 
