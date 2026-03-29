@@ -4,13 +4,17 @@ set -e
 
 HERE="$(readlink -f "$(dirname "$0")")"
 
-# Bundle shared library deps (flexlay_wrap.so, netpanzer_wrap.so, and
+# Bundle shared library deps (flexlay_wrap.so, netpanzer_wrap.so, libruby, and
 # everything linuxdeploy copied) come from usr/lib/.
 export LD_LIBRARY_PATH="$HERE/usr/lib:${LD_LIBRARY_PATH}"
 
-# Ruby extension modules (.so) live in usr/lib/; Ruby library scripts live
-# in the two subdirectories below.
-export RUBYLIB="$HERE/usr/lib:$HERE/usr/share/netpanzer-editor/ruby:$HERE/usr/share/netpanzer-editor/netpanzer:${RUBYLIB}"
+# Use the bundled Ruby stdlib (pure Ruby + C extensions) so the bundled .so
+# extension modules match the bundled Ruby interpreter's ABI.
+export RUBYLIB="$HERE/usr/lib/ruby:$HERE/usr/lib:$HERE/usr/share/netpanzer-editor/ruby:$HERE/usr/share/netpanzer-editor/netpanzer:${RUBYLIB}"
+
+# Prevent the bundled Ruby from loading gems compiled for the host Ruby version.
+export GEM_HOME="$HERE/usr/share/netpanzer-editor/gems"
+export GEM_PATH="$HERE/usr/share/netpanzer-editor/gems"
 
 # Flexlay icons / gui.xml — resolved by the Ruby code via $flexlay_datadir.
 export FLEXLAY_DATADIR="$HERE/usr/share/netpanzer-editor/data"
@@ -27,4 +31,4 @@ if [ -z "$NETPANZER_DATADIR" ]; then
   echo "  NETPANZER_DATADIR=/usr/share/games/netpanzer $0" >&2
 fi
 
-exec ruby -w "$HERE/usr/share/netpanzer-editor/netpanzer/netpanzer.rb" "$@"
+exec "$HERE/usr/bin/ruby" -w "$HERE/usr/share/netpanzer-editor/netpanzer/netpanzer.rb" "$@"

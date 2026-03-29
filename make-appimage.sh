@@ -76,6 +76,19 @@ scons
 # Populate AppDir
 # ---------------------------------------------------------------------------
 
+# Ruby interpreter — bundle so the AppImage is independent of host Ruby version.
+# The .so extension modules are ABI-tied to the Ruby version they were compiled
+# against; bundling that same Ruby avoids version mismatch errors on the host.
+RUBY_BIN=$(command -v ruby)
+RUBY_LIBDIR=$(ruby -r rbconfig -e 'puts RbConfig::CONFIG["rubylibdir"]')
+RUBY_ARCHDIR=$(ruby -r rbconfig -e 'puts RbConfig::CONFIG["archdir"]')
+
+install -Dm755 "$RUBY_BIN" "$APPDIR/usr/bin/ruby"
+
+mkdir -p "$APPDIR/usr/lib/ruby"
+cp -a "$RUBY_LIBDIR/." "$APPDIR/usr/lib/ruby/"
+cp -a "$RUBY_ARCHDIR/." "$APPDIR/usr/lib/ruby/"
+
 # Ruby extension modules — placed in usr/lib/ so LD_LIBRARY_PATH and RUBYLIB
 # both resolve them correctly from the AppRun environment.
 install -Dm755 "$WORKSPACE/ruby/flexlay_wrap.so"        "$APPDIR/usr/lib/flexlay_wrap.so"
@@ -112,6 +125,16 @@ mkdir -p "$DOCDIR"
 install -Dm644 "$WORKSPACE/COPYING"  "$DOCDIR/LICENSE"
 install -Dm644 "$WORKSPACE/README"   "$DOCDIR/README"
 
+# Ruby license — BSD 2-clause requires preserving the copyright notice in
+# binary distributions. Ruby is dual-licensed; the BSD 2-clause text is
+# shipped in the distro package's copyright file.
+RUBY_COPYRIGHT=$(ls /usr/share/doc/ruby*/copyright 2>/dev/null | head -1)
+if [ -z "$RUBY_COPYRIGHT" ]; then
+  echo "ERROR: cannot find Ruby copyright file in /usr/share/doc/ruby*/" >&2
+  exit 1
+fi
+install -Dm644 "$RUBY_COPYRIGHT" "$DOCDIR/LICENSE.Ruby"
+
 # ClanLib license — zlib license requires the notice be preserved in
 # distributions. Clause 2 also requires modified versions be plainly marked;
 # the notice below satisfies both for binary distributions.
@@ -140,6 +163,7 @@ export LINUXDEPLOY_OUTPUT_VERSION="$VERSION"
 
 linuxdeploy \
   --appdir "$APPDIR" \
+  --executable "$APPDIR/usr/bin/ruby" \
   --library "$APPDIR/usr/lib/flexlay_wrap.so" \
   --library "$APPDIR/usr/lib/netpanzer_wrap.so" \
   --desktop-file "$APPDIR/usr/share/applications/netpanzer-editor.desktop" \
