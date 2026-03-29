@@ -1,6 +1,24 @@
 # -*- python -*-
 
-env = Environment(CPPPATH=['API', '.'], CCFLAGS=['-fPIC'])
+import os
+
+# Detect number of CPUs for parallel builds
+try:
+    import multiprocessing
+    num_cpus = multiprocessing.cpu_count()
+except (ImportError, NotImplementedError):
+    num_cpus = 1
+
+# Set default parallelism if not specified
+env = Environment(
+    CPPPATH=['API', '.'],
+    CCFLAGS=['-fPIC'],
+    ENV=os.environ
+)
+
+# Enable parallel builds by default (can be overridden with -j)
+if GetOption('num_jobs') == 1:  # Default value
+    SetOption('num_jobs', num_cpus)
     
 #    CXXFLAGS  = env['CXXFLAGS'] + clanLib_env['CCFLAGS'],
 #    LINKFLAGS = clanLib_env['LINKFLAGS'],

@@ -86,6 +86,21 @@ scons -c
 
 This removes all `.o` files and libraries but not the final binaries.
 
+### Parallel Builds
+
+The build system automatically detects your CPU count and uses parallel compilation by default for faster builds. You can also explicitly control parallelism:
+
+```bash
+scons -j4   # Use 4 parallel jobs
+scons -j    # Use all available CPUs
+scons -j1   # Serial build (one job at a time)
+```
+
+For multi-core systems, parallel builds are significantly faster:
+- **2 cores**: ~2x faster
+- **4 cores**: ~3-4x faster  
+- **8+ cores**: ~6-8x faster (diminishing returns)
+
 ## Troubleshooting
 
 ### Build Fails with "pkg-config not found"
@@ -135,19 +150,22 @@ The bindings are compiled as shared objects (`.so` files) and loaded at runtime.
 
 ## Development
 
+### Parallel Builds
+
+The build system is configured to use all available CPU cores by default for faster compilation:
+
+```bash
+scons           # Automatically uses all CPU cores
+scons -j8       # Explicitly use 8 parallel jobs
+scons -j1       # Serial build (one job at a time)
+```
+
 ### Incremental Builds
 SCons caches build state in `.sconsign.dblite`. To force a full rebuild:
 
 ```bash
 rm .sconsign.dblite
 scons
-```
-
-### Parallel Builds
-SCons supports parallel building (use with caution):
-
-```bash
-scons -j4  # Use 4 parallel jobs
 ```
 
 ### Verbose Output
