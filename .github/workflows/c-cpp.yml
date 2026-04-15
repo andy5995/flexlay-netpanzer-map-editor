@@ -36,7 +36,7 @@ jobs:
       CC: '${{ matrix.build.cc }}'
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set CXX
       if: ${{ env.CC }}
