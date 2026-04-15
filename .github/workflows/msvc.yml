@@ -1,0 +1,62 @@
+name: MSVC
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [main, qt-port]
+    paths:
+      - '**'
+      - '!**.md'
+      - '**/msvc.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '**'
+      - '!**.md'
+      - '**/msvc.yml'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    env:
+      QT_VERSION: '5.15.2'
+      QT_ARCH: win64_msvc2019_64
+      QT_DIR: ${{ github.workspace }}\Qt
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Qt
+        id: cache-qt
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.QT_DIR }}
+          key: qt-${{ env.QT_VERSION }}-${{ env.QT_ARCH }}
+
+      - name: Install Qt5 via aqtinstall
+        if: steps.cache-qt.outputs.cache-hit != 'true'
+        run: |
+          pip install aqtinstall
+          aqt install-qt windows desktop ${{ env.QT_VERSION }} ${{ env.QT_ARCH }} -O ${{ env.QT_DIR }}
+
+      - name: Add Qt to PATH
+        run: echo "${{ env.QT_DIR }}\${{ env.QT_VERSION }}\msvc2019_64\bin" | Out-File -Append -FilePath $env:GITHUB_PATH
+
+      - name: Install Meson and Ninja
+        run: pip install meson ninja
+
+      - name: Set up MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Build
+        run: |
+          meson setup build --backend=ninja
+          ninja -C build
+
+      - name: Test
+        run: meson test -C build --print-errorlogs

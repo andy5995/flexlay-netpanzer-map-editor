@@ -1,3 +1,23 @@
+NetPanzer Map Editor (Qt5 port)
+================================
+
+0.1 (in development)
+---------------------
+- Complete rewrite from ClanLib+SCons+Ruby to Qt5+Meson+C++
+- Proper binary .npm load/save with verified round-trip
+- .opt (outpost) and .spn (spawn point) companion file support
+- Tile painting with undo/redo (Command pattern, per-stroke batching)
+- Object placement, selection, drag-to-move, rename, delete
+- Tileset atlas rendering (QImage-based, palette-indexed .tls loader)
+- Minimap dock with viewport overlay and click-to-pan
+- Tile picker dock
+- Zoom toward cursor
+- 25 automated Qt Test unit tests (maploader + tlsloader)
+- Meson build system with ASan/UBSan enabled by default
+- AppImage packaging via linuxdeploy
+
+--- Historical Flexlay releases ---
+
 Flexlay 0.1.0
 =============
  - splitted flexlay into a C++ library and a scripting modules, Ruby

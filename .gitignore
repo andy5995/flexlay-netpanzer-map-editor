@@ -1,19 +1,9 @@
-*.o
-/.sconsign.dblite
-*.a
-/netpanzer/netpanzer.os
-/netpanzer/netpanzer_wrap.cpp
-/netpanzer/netpanzer_wrap.tmp.cpp
-/netpanzer/netpanzer_wrap.os
-/netpanzer/netpanzer_wrap.so
-/ruby/flexlay_ruby_wrap.cpp
-/ruby/flexlay_ruby_wrap.os
-/ruby/ruby_functor.os
-/ruby/ruby_converter.os
-/ruby/ruby_meta_data.os
-/ruby/ruby_object.os
-/ruby/ruby_sexpr_parser.os
-/ruby/flexlay_wrap.so
-/external/clanlib/.sconsign.dblite
-build.log
+# Meson build directory and AppImage output
+/build/
 /out/
+
+# Meson-generated MOC files (can appear in src/ with in-source builds)
+*.moc
+
+# Windows installer staging directory
+/_staging/

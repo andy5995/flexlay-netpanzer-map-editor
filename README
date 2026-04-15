@@ -1,32 +1,36 @@
-Flexlay
-=======
+NetPanzer Map Editor
+====================
 
-Flexlay is a generic 2d editor with special focus on games. It
-currently supports multi layered tile-, object- and bitmaps, full
-undo/redo, support for tile-brushes, easy copy/paste, multiple
-buffers, minimap support, a metadata editor and some other stuff
-usefull for creating levels for 2d games.
+A Qt5-based map editor for the netPanzer open-source real-time strategy game.
 
-Supported games are at the moment:
+Features
+--------
 
- netPanzer  - http://netpanzer.berlios.de/
- SuperTux   - http://super-tux.sourceforge.net/
+- Open and save netPanzer .npm maps (binary format, verified round-trip)
+- Tile painting with full undo/redo
+- Place and move outpost and spawn-point objects
+- Object renaming via double-click or context menu
+- Minimap with viewport overlay and click-to-pan
+- Tileset tile picker dock
+- Zoom toward cursor
+- Keyboard shortcuts: T (tile paint), O (place outpost), S (spawn point), V (select)
 
-Other Stuff:
+Building
+--------
 
- Paint - A basic application with animation and graphic tablet support 
+See BUILD.md for full build and AppImage instructions.
 
-Flexlay can't be run on its own, but instead of you have to start it
-via wrapper scripts (supertux-editor, windstille-editor,
-netpanzer-editor).
+Quick start:
 
-For informations on how to compile and run Flexlay see the file
-INSTALL. Flexlay makes use of OpenGL so you will need working hardware
-3d support.
+  $ meson setup build
+  $ ninja -C build
+  $ ./build/netpanzer-editor
 
-Flexlay is covered under the GNU GPL, which means that you can copy
-and even modify it pretty much as you like, as long as you keep the
-copyright headers in place and distribute the source too if you
-distribute binaries, see the file COPYING for details.
+License
+-------
+
+GNU GPL v3 — see COPYING for details.
+Original Flexlay code by Ingo Ruhnke <grumbel@gmx.de>.
+Qt5 port by andy5995.
 
 # EOF #

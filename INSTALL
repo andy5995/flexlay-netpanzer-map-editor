@@ -1,78 +1,14 @@
-Installing Flexlay 
-==================
+Installing NetPanzer Map Editor
+================================
 
-Requirements:
-=============
+See BUILD.md for full build, test, and AppImage instructions.
 
-To compile Flexlay you need:
+Quick start:
 
-Build Tools:
-  * GCC/G++ or Clang C++ compiler
-  * SCons (build system)
-  * SWIG (for Ruby bindings)
-  * pkg-config
+  $ meson setup build
+  $ ninja -C build
+  $ NETPANZER_DATADIR=/path/to/netpanzer/data ./build/netpanzer-editor
 
-Libraries:
-  * Ruby development headers (ruby-dev)
-  * Boost development headers (libboost-dev)
-  * OpenGL/Mesa development headers
-  * X11 development headers (includes libx11, libxmu, libxi, libxxf86vm, libxrandr)
-  * PNG and JPEG libraries
-
-On Ubuntu/Debian, install dependencies with:
-
-  $ sudo apt install build-essential libboost-dev ruby-dev scons swig \
-      libx11-dev libxmu-dev libxi-dev libxxf86vm-dev libxrandr-dev \
-      libgl1-mesa-dev libglu1-mesa-dev libpng-dev libjpeg-dev
-
-
-Compilation:
-============
-
-The project uses a bundled copy of ClanLib (included in external/clanlib/).
-To build:
-
-  $ scons
-
-This will automatically:
-  1. Build the bundled ClanLib libraries with position-independent code
-  2. Compile the Flexlay library and tools
-  3. Generate Ruby bindings for game editors
-
-
-Building ClanLib Separately (optional):
-========================================
-
-If you need to rebuild ClanLib independently:
-
-  $ cd external/clanlib
-  $ scons
-  $ cd ../..
-
-
-Running:
-========
-
-The directories supertux/, netpanzer/, paint/ contain the editors for 
-the games. Run the executable scripts in those directories. You may need 
-to adjust the path to the game data, which is currently hardcoded in 
-the scripts.
-
-
-Installation:
-==============
-
-Currently not supported. Run directly from the source directory.
-
-
-Notes:
-======
-
-Flexlay is still a moving target, so most often you are better off
-using the latest development version instead of a tarball release.
-
-The bundled ClanLib version has been patched for modern C++ and is 
-included in external/clanlib/. Building with system ClanLib is not 
-recommended.
+The editor runs directly from the build directory; no install step is required.
 
 # EOF #

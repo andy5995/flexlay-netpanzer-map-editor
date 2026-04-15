@@ -1,0 +1,11 @@
+# ASan/LeakSanitizer suppressions for known third-party leaks.
+# These are internal fontconfig/Pango/GTK3 bookkeeping allocations that are
+# never freed on exit.  None of the stack frames below originate in our code.
+
+leak:FcValueSave
+leak:FcConfigSetDefaultSubstitute
+leak:libfontconfig.so
+leak:libpango-1.0.so
+leak:libpangoft2-1.0.so
+leak:libpangocairo-1.0.so
+leak:libgtk-3.so

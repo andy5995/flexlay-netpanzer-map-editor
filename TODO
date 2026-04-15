@@ -1,6 +1,12 @@
-- GC_VALUE in netpanzer isn't defined, might be related to %import'ing flexlay.i
+Known missing features
+======================
 
-- SConstruct file needs configuration features (check for clanlib,
-   check for ruby.h, check for swig1.3)
+- Tileset theme switching UI (Desert / IcyWinter / Martian / etc. variants
+  alongside the default summer12mb)
+
+- Multi-buffer / tabbed map editing
+
+- Object count validation (enforce max outposts and spawn points per the
+  netPanzer map specification)
 
 # EOF #

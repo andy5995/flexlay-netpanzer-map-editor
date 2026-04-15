@@ -1,0 +1,40 @@
+name: macOS
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [main, qt-port]
+    paths:
+      - '**'
+      - '!**.md'
+      - '**/macos.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '**'
+      - '!**.md'
+      - '**/macos.yml'
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install meson ninja qt@5
+
+      - name: Build
+        run: |
+          export PKG_CONFIG_PATH="$(brew --prefix qt@5)/lib/pkgconfig"
+          meson setup build
+          ninja -C build
+
+      - name: Test
+        run: |
+          export PKG_CONFIG_PATH="$(brew --prefix qt@5)/lib/pkgconfig"
+          meson test -C build --print-errorlogs

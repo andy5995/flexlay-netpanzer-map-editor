@@ -4,31 +4,7 @@ set -e
 
 HERE="$(readlink -f "$(dirname "$0")")"
 
-# Bundle shared library deps (flexlay_wrap.so, netpanzer_wrap.so, libruby, and
-# everything linuxdeploy copied) come from usr/lib/.
+# Bundled Qt and other shared libraries copied by linuxdeploy live in usr/lib/.
 export LD_LIBRARY_PATH="$HERE/usr/lib:${LD_LIBRARY_PATH}"
 
-# Use the bundled Ruby stdlib (pure Ruby + C extensions) so the bundled .so
-# extension modules match the bundled Ruby interpreter's ABI.
-export RUBYLIB="$HERE/usr/lib/ruby:$HERE/usr/lib:$HERE/usr/share/netpanzer-editor/ruby:$HERE/usr/share/netpanzer-editor/netpanzer:${RUBYLIB}"
-
-# Prevent the bundled Ruby from loading gems compiled for the host Ruby version.
-export GEM_HOME="$HERE/usr/share/netpanzer-editor/gems"
-export GEM_PATH="$HERE/usr/share/netpanzer-editor/gems"
-
-# Flexlay icons / gui.xml — resolved by the Ruby code via $flexlay_datadir.
-export FLEXLAY_DATADIR="$HERE/usr/share/netpanzer-editor/data"
-
-# Editor sprite data (netpanzersprites.xml, thumbnails/) bundled from netpanzer/.
-export NETPANZER_EDITOR_DATADIR="$HERE/usr/share/netpanzer-editor/netpanzer"
-
-# NETPANZER_DATADIR must point to the user's netpanzer game data (wads/,
-# tiles, etc.).  Warn if unset rather than silently using the hardcoded
-# fallback path from the original developer's machine.
-if [ -z "$NETPANZER_DATADIR" ]; then
-  echo "Warning: NETPANZER_DATADIR is not set." >&2
-  echo "Set it to the path of your netpanzer game data, e.g.:" >&2
-  echo "  NETPANZER_DATADIR=/usr/share/games/netpanzer $0" >&2
-fi
-
-exec "$HERE/usr/bin/ruby" -w "$HERE/usr/share/netpanzer-editor/netpanzer/netpanzer.rb" "$@"
+exec "$HERE/usr/bin/netpanzer-editor" "$@"

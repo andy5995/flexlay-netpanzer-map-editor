@@ -5,6 +5,7 @@ services:
       HOSTGID: ${HOSTGID:-1000}
       VERSION: "${VERSION:-0.1}"
       WORKSPACE: /workspace
+      DOCKER_BUILD: 1
     image: andy5995/linuxdeploy:v3-jammy
     volumes:
       - .:/workspace

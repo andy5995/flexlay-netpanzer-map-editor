@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=NetPanzer Map Editor
+Comment=Map editor for the NetPanzer game
+Exec=netpanzer-editor
+Icon=netpanzer-editor
+Type=Application
+Categories=Game;
