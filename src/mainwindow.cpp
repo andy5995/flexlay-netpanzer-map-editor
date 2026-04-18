@@ -157,21 +157,22 @@ void MainWindow::setupMenus()
     m_toolGroup = new QActionGroup(this);
     m_toolGroup->setExclusive(true);
 
-    struct ToolDef { const char* label; Tool tool; QKeySequence key; };
+    struct ToolDef { const char* label; const char* iconText; Tool tool; QKeySequence key; };
     const ToolDef defs[] = {
-        { "Tile &Paint",      Tool::TilePaint,       Qt::Key_T },
-        { "Tile P&ick",       Tool::TilePick,        Qt::Key_I },
-        { "&Rect Select",     Tool::RectSelect,      Qt::Key_R },
-        { "&Stamp Paint",     Tool::StampPaint,      Qt::Key_M },
-        { "Place &Outpost",   Tool::PlaceOutpost,    Qt::Key_O },
-        { "Place &Spawnpoint",Tool::PlaceSpawnpoint, Qt::Key_S },
-        { "Se&lect Object",   Tool::SelectObject,    Qt::Key_V },
+        { "Tile &Paint",       "Paint",    Tool::TilePaint,       Qt::Key_T },
+        { "Tile P&ick",        "Pick",     Tool::TilePick,        Qt::Key_I },
+        { "&Rect Select",      "Rect Sel", Tool::RectSelect,      Qt::Key_R },
+        { "&Stamp Paint",      "Stamp",    Tool::StampPaint,      Qt::Key_M },
+        { "Place &Outpost",    "Outpost",  Tool::PlaceOutpost,    Qt::Key_O },
+        { "Place &Spawnpoint", "Spawn",    Tool::PlaceSpawnpoint, Qt::Key_S },
+        { "Se&lect Object",    "Select",   Tool::SelectObject,    Qt::Key_V },
     };
     for (const auto& d : defs) {
         QAction* a = tools->addAction(d.label);
         a->setCheckable(true);
         a->setShortcut(d.key);
         a->setData(int(d.tool));
+        a->setIconText(d.iconText);
         m_toolGroup->addAction(a);
         connect(a, &QAction::triggered, this, [this, t = d.tool]() { onSetTool(t); });
     }
@@ -229,29 +230,10 @@ void MainWindow::setupToolbar()
     tb->addAction("Zoom Out", this, &MainWindow::onZoomOut);
     tb->addSeparator();
 
-    // Tools (checkable buttons mirroring the menu)
-    const struct { const char* lbl; Tool t; } tbs[] = {
-        {"Paint",     Tool::TilePaint},
-        {"Pick",      Tool::TilePick},
-        {"Rect Sel",  Tool::RectSelect},
-        {"Stamp",     Tool::StampPaint},
-        {"Outpost",   Tool::PlaceOutpost},
-        {"Spawn",     Tool::PlaceSpawnpoint},
-        {"Select",    Tool::SelectObject},
-    };
-    for (const auto& b : tbs) {
-        QAction* a = tb->addAction(b.lbl);
-        a->setCheckable(true);
-        a->setData(int(b.t));
-        // keep in sync with menu tool group
-        connect(a, &QAction::triggered, this, [this, t = b.t]() { onSetTool(t); });
-        connect(m_toolGroup, &QActionGroup::triggered, this,
-                [a, t = b.t](QAction* checked) {
-                    a->setChecked(checked->data().toInt() == int(t));
-                });
-    }
-    // Default: Paint selected
-    tb->actions().last()->parent(); // noop — first tool action already checked
+    // Tools — reuse the same QAction objects from the menu so they share
+    // checked state and the exclusive group handles mutual exclusivity.
+    for (QAction* a : m_toolGroup->actions())
+        tb->addAction(a);
 }
 
 // ---------------------------------------------------------------------------
