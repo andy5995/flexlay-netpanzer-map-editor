@@ -142,6 +142,9 @@ private:
     const Stamp* m_currentStamp    = nullptr;
     QPoint       m_stampHoverTile  = QPoint(-1, -1);
 
+    // Outpost placement hover (tile coords, (-1,-1) = none)
+    QPoint m_outpostHoverTile = QPoint(-1, -1);
+
     // Pan state (middle button)
     bool   m_panning   = false;
     QPoint m_lastMouse;
