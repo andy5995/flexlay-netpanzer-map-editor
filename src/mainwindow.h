@@ -7,6 +7,8 @@
 
 class MapView;
 class TilePanel;
+class TileBrowser;
+class StampPanel;
 class Minimap;
 class QLabel;
 class QAction;
@@ -52,9 +54,11 @@ private:
     // or the user chose to save/discard). Returns false if the user cancelled.
     bool maybeSave();
 
-    MapView*      m_view      = nullptr;
-    TilePanel*    m_tilePanel = nullptr;
-    Minimap*      m_minimap   = nullptr;
+    MapView*      m_view        = nullptr;
+    TilePanel*    m_tilePanel   = nullptr;
+    TileBrowser*  m_tileBrowser = nullptr;
+    StampPanel*   m_stampPanel  = nullptr;
+    Minimap*      m_minimap     = nullptr;
     QLabel*       m_statusTile = nullptr;
     QLabel*       m_statusZoom = nullptr;
     QLabel*       m_statusObj  = nullptr;

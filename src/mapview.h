@@ -2,6 +2,7 @@
 #include <QWidget>
 #include <QPoint>
 #include <QPointF>
+#include <QRect>
 #include <QRectF>
 #include <QPixmap>
 #include <QSet>
@@ -10,10 +11,13 @@
 #include "objects.h"
 #include "tlsloader.h"
 #include "commands.h"
+#include "stamp.h"
 
 enum class Tool {
     TilePaint,       // left-drag paints selected tile
     TilePick,        // left-click picks tile under cursor, switches to TilePaint
+    RectSelect,      // drag to select a rectangular tile region
+    StampPaint,      // click to place the current stamp
     PlaceOutpost,    // left-click places an outpost
     PlaceSpawnpoint, // left-click places a spawn point
     SelectObject     // left-click selects/drags objects; Del removes
@@ -45,6 +49,14 @@ public:
     void setSelectedTile(int id) { m_selectedTile = id; }
     int  selectedTile()   const  { return m_selectedTile; }
 
+    // Rect selection
+    QRect selection() const { return m_selection; }
+    bool  hasSelection() const { return !m_selection.isNull(); }
+    Stamp captureSelection() const;
+
+    // Stamp painting
+    void setCurrentStamp(const Stamp* stamp);
+
     // View options
     void setShowGrid(bool show) { m_showGrid = show; update(); }
     bool showGrid()       const  { return m_showGrid; }
@@ -68,7 +80,8 @@ public:
 
 signals:
     void tileHovered(int tileX, int tileY, int tileId);
-    void tilePicked(int tileId);   // emitted when TilePick tool clicks a tile
+    void tilePicked(int tileId);        // emitted when TilePick tool clicks a tile
+    void selectionChanged(QRect sel);   // emitted when rect selection changes
     void mapModified();
     void objectSelectionChanged(int idx); // -1 = none
     void objectActivated(int idx);        // double-click on an object
@@ -120,9 +133,20 @@ private:
     int  m_selectedTile = 0;
     int  m_selectedObj  = -1;
 
+    // Rect selection state
+    QRect  m_selection;          // in tile coords, null if none
+    bool   m_selecting  = false;
+    QPoint m_selectStart;        // tile coord where drag began
+
+    // Stamp paint state
+    const Stamp* m_currentStamp    = nullptr;
+    QPoint       m_stampHoverTile  = QPoint(-1, -1);
+
     // Pan state (middle button)
     bool   m_panning   = false;
     QPoint m_lastMouse;
+
+    void applyStamp(int tx, int ty);
 
     // Tile stroke state
     std::unique_ptr<TileBatch> m_currentStroke;

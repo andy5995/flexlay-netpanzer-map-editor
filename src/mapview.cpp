@@ -79,6 +79,8 @@ void MapView::setTool(Tool t)
 
     switch (t) {
     case Tool::TilePick:        setCursor(Qt::PointingHandCursor); break;
+    case Tool::RectSelect:      setCursor(Qt::CrossCursor); break;
+    case Tool::StampPaint:      setCursor(Qt::CrossCursor); break;
     case Tool::SelectObject:    setCursor(Qt::ArrowCursor); break;
     case Tool::PlaceOutpost:
     case Tool::PlaceSpawnpoint: setCursor(Qt::CrossCursor); break;
@@ -165,6 +167,59 @@ void MapView::redo()
     emit objectSelectionChanged(-1);
     update();
     emit mapModified();
+}
+
+// ---------------------------------------------------------------------------
+// Rect selection / stamp
+
+Stamp MapView::captureSelection() const
+{
+    Stamp s;
+    if (m_selection.isNull() || !m_map.isValid()) return s;
+    const int x0 = std::max(0, m_selection.x());
+    const int y0 = std::max(0, m_selection.y());
+    const int x1 = std::min(m_map.width  - 1, m_selection.right());
+    const int y1 = std::min(m_map.height - 1, m_selection.bottom());
+    s.width  = x1 - x0 + 1;
+    s.height = y1 - y0 + 1;
+    s.tiles.resize(size_t(s.width * s.height));
+    for (int row = 0; row < s.height; ++row)
+        for (int col = 0; col < s.width; ++col)
+            s.tiles[size_t(row * s.width + col)] =
+                m_map.tiles[size_t((y0 + row) * m_map.width + (x0 + col))];
+    return s;
+}
+
+void MapView::setCurrentStamp(const Stamp* stamp)
+{
+    m_currentStamp   = stamp;
+    m_stampHoverTile = QPoint(-1, -1);
+    update();
+}
+
+void MapView::applyStamp(int tx, int ty)
+{
+    if (!m_currentStamp || !m_map.isValid()) return;
+    auto batch = std::make_unique<TileBatch>();
+    for (int row = 0; row < m_currentStamp->height; ++row) {
+        for (int col = 0; col < m_currentStamp->width; ++col) {
+            const int mtx = tx + col;
+            const int mty = ty + row;
+            if (mtx < 0 || mty < 0 || mtx >= m_map.width || mty >= m_map.height)
+                continue;
+            const int idx = mty * m_map.width + mtx;
+            const uint16_t oldVal = m_map.tiles[size_t(idx)];
+            const uint16_t newVal = m_currentStamp->tiles[size_t(row * m_currentStamp->width + col)];
+            if (oldVal == newVal) continue;
+            m_map.tiles[size_t(idx)] = newVal;
+            batch->edits.push_back({idx, oldVal, newVal});
+        }
+    }
+    if (!batch->empty()) {
+        pushCommand(std::move(batch));
+        update();
+        emit mapModified();
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -273,6 +328,38 @@ void MapView::paintEvent(QPaintEvent*)
             }
     }
 
+    // Stamp ghost preview
+    if (m_tool == Tool::StampPaint && m_currentStamp &&
+        m_stampHoverTile.x() >= 0 && !m_atlasPixmap.isNull()) {
+        const int tx = m_stampHoverTile.x();
+        const int ty = m_stampHoverTile.y();
+        p.setOpacity(0.55);
+        for (int row = 0; row < m_currentStamp->height; ++row) {
+            for (int col = 0; col < m_currentStamp->width; ++col) {
+                const int id  = m_currentStamp->tiles[size_t(row * m_currentStamp->width + col)];
+                const QRect src = m_tileset->atlasRect(id, ATLAS_COLS);
+                p.drawPixmap(
+                    QRectF((tx + col) * TILE_SIZE, (ty + row) * TILE_SIZE, TILE_SIZE, TILE_SIZE),
+                    m_atlasPixmap, QRectF(src));
+            }
+        }
+        p.setOpacity(1.0);
+    }
+
+    // Selection highlight
+    if (!m_selection.isNull()) {
+        const QRectF selRect(m_selection.x() * TILE_SIZE,
+                             m_selection.y() * TILE_SIZE,
+                             m_selection.width()  * TILE_SIZE,
+                             m_selection.height() * TILE_SIZE);
+        p.setOpacity(0.25);
+        p.fillRect(selRect, QColor(255, 220, 0));
+        p.setOpacity(1.0);
+        p.setBrush(Qt::NoBrush);
+        p.setPen(QPen(QColor(255, 220, 0), 0));
+        p.drawRect(selRect);
+    }
+
     // Grid
     if (m_showGrid && m_zoom > 0.2) {
         p.setPen(QPen(QColor(0, 0, 0, 80), 0));
@@ -368,6 +455,23 @@ void MapView::mousePressEvent(QMouseEvent* ev)
         }
         break;
     }
+    case Tool::RectSelect: {
+        int tx, ty;
+        if (widgetToTile(ev->pos(), tx, ty)) {
+            m_selecting   = true;
+            m_selectStart = QPoint(tx, ty);
+            m_selection   = QRect(tx, ty, 1, 1);
+            emit selectionChanged(m_selection);
+            update();
+        }
+        break;
+    }
+    case Tool::StampPaint: {
+        int tx, ty;
+        if (widgetToTile(ev->pos(), tx, ty))
+            applyStamp(tx, ty);
+        break;
+    }
     case Tool::TilePaint: {
         startStroke();
         int tx, ty;
@@ -443,6 +547,29 @@ void MapView::mouseMoveEvent(QMouseEvent* ev)
             addToStroke(tx, ty);
     }
 
+    if (m_tool == Tool::RectSelect && m_selecting && (ev->buttons() & Qt::LeftButton)) {
+        int tx, ty;
+        if (widgetToTile(ev->pos(), tx, ty)) {
+            const int x0 = std::min(m_selectStart.x(), tx);
+            const int y0 = std::min(m_selectStart.y(), ty);
+            const int x1 = std::max(m_selectStart.x(), tx);
+            const int y1 = std::max(m_selectStart.y(), ty);
+            m_selection = QRect(x0, y0, x1 - x0 + 1, y1 - y0 + 1);
+            emit selectionChanged(m_selection);
+            update();
+        }
+    }
+
+    if (m_tool == Tool::StampPaint) {
+        int tx, ty;
+        const QPoint newHover = widgetToTile(ev->pos(), tx, ty)
+                                ? QPoint(tx, ty) : QPoint(-1, -1);
+        if (newHover != m_stampHoverTile) {
+            m_stampHoverTile = newHover;
+            update();
+        }
+    }
+
     if (m_tool == Tool::SelectObject && m_draggingObj &&
         m_selectedObj >= 0 && (ev->buttons() & Qt::LeftButton)) {
         int tx, ty;
@@ -477,6 +604,11 @@ void MapView::mouseReleaseEvent(QMouseEvent* ev)
         if (m_tool == Tool::TilePaint)
             commitStroke();
 
+        if (m_tool == Tool::RectSelect && m_selecting) {
+            m_selecting = false;
+            // selection already updated in mouseMoveEvent
+        }
+
         if (m_tool == Tool::SelectObject && m_draggingObj && m_selectedObj >= 0) {
             const auto& obj = m_map.objects[size_t(m_selectedObj)];
             if (obj.x != m_objDragOrigX || obj.y != m_objDragOrigY) {
@@ -499,6 +631,10 @@ void MapView::leaveEvent(QEvent*)
 {
     commitStroke();
     m_draggingObj = false;
+    if (m_tool == Tool::StampPaint && m_stampHoverTile.x() >= 0) {
+        m_stampHoverTile = QPoint(-1, -1);
+        update();
+    }
 }
 
 // ---------------------------------------------------------------------------
