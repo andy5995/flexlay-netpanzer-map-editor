@@ -111,7 +111,9 @@ int MapView::objectAt(QPoint wpos) const
 {
     if (m_map.objects.empty()) return -1;
     const QPointF mp = widgetToMapPx(wpos);
-    const double hitR = TILE_SIZE * 0.6;
+    // Enforce a minimum hit radius of 8 screen pixels so objects remain
+    // clickable at low zoom levels.
+    const double hitR = std::max(TILE_SIZE * 0.6, 8.0 / m_zoom);
     // Iterate in reverse so topmost-drawn object wins
     for (int i = int(m_map.objects.size()) - 1; i >= 0; --i) {
         const auto& obj = m_map.objects[size_t(i)];
@@ -376,7 +378,7 @@ void MapView::paintEvent(QPaintEvent*)
     for (int i = 0; i < int(m_map.objects.size()); ++i) {
         const auto& obj = m_map.objects[size_t(i)];
         const QPointF centre((obj.x + 0.5) * TILE_SIZE, (obj.y + 0.5) * TILE_SIZE);
-        const double r = TILE_SIZE * 0.45;
+        const double r = std::max(TILE_SIZE * 0.45, 5.0 / m_zoom);
 
         const bool selected = (i == m_selectedObj);
         QColor fill = (obj.type == "outpost") ? QColor(220, 60, 60, 210)
