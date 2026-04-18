@@ -24,7 +24,10 @@
 #include <QKeySequence>
 #include <QCloseEvent>
 #include <QTime>
+#include <QSettings>
 #include <cmath>
+
+static constexpr int MAX_RECENT = 8;
 
 // ---------------------------------------------------------------------------
 // Constructor
@@ -109,6 +112,9 @@ void MainWindow::setupMenus()
     QAction* openAct = file->addAction("&Open…");
     openAct->setShortcut(QKeySequence::Open);
     connect(openAct, &QAction::triggered, this, &MainWindow::onOpen);
+
+    m_recentMenu = file->addMenu("Open &Recent");
+    connect(m_recentMenu, &QMenu::aboutToShow, this, &MainWindow::populateRecentMenu);
 
     file->addSeparator();
 
@@ -270,6 +276,33 @@ void MainWindow::setCurrentFile(const QString& path)
 }
 
 // ---------------------------------------------------------------------------
+// Recent files
+
+void MainWindow::addToRecentFiles(const QString& path)
+{
+    QSettings s;
+    QStringList files = s.value("recentFiles").toStringList();
+    files.removeAll(path);
+    files.prepend(path);
+    while (files.size() > MAX_RECENT)
+        files.removeLast();
+    s.setValue("recentFiles", files);
+}
+
+void MainWindow::populateRecentMenu()
+{
+    m_recentMenu->clear();
+    const QStringList files = QSettings().value("recentFiles").toStringList();
+    for (const QString& path : files) {
+        QAction* a = m_recentMenu->addAction(QFileInfo(path).fileName());
+        a->setToolTip(path);
+        connect(a, &QAction::triggered, this, [this, path]() { openFile(path); });
+    }
+    if (files.isEmpty())
+        m_recentMenu->addAction("(none)")->setEnabled(false);
+}
+
+// ---------------------------------------------------------------------------
 // Tileset search + apply
 
 QString MainWindow::findTileset(const QString& mapPath,
@@ -325,15 +358,8 @@ void MainWindow::applyTileset()
 // ---------------------------------------------------------------------------
 // File actions
 
-void MainWindow::onOpen()
+void MainWindow::openFile(const QString& fn)
 {
-    if (!maybeSave()) return;
-
-    const QString fn = QFileDialog::getOpenFileName(
-        this, "Open map", m_currentFile,
-        "netPanzer maps (*.npm);;Text maps (*.txt);;All files (*)");
-    if (fn.isEmpty()) return;
-
     Map m = MapLoader::load(fn);
     if (!m.isValid()) {
         QMessageBox::warning(this, "Open failed", "Could not load:\n" + fn);
@@ -345,6 +371,7 @@ void MainWindow::onOpen()
     setCurrentFile(fn);
     m_undoAct->setEnabled(false);
     m_redoAct->setEnabled(false);
+    addToRecentFiles(fn);
 
     // Auto-detect tileset
     const QString tsPath = findTileset(fn, m.tileSetName);
@@ -364,6 +391,18 @@ void MainWindow::onOpen()
     }
 
     m_view->fitToWindow();
+}
+
+void MainWindow::onOpen()
+{
+    if (!maybeSave()) return;
+
+    const QString fn = QFileDialog::getOpenFileName(
+        this, "Open map", m_currentFile,
+        "netPanzer maps (*.npm);;Text maps (*.txt);;All files (*)");
+    if (fn.isEmpty()) return;
+
+    openFile(fn);
 }
 
 // Build a copy of the current map with the thumbnail populated from the

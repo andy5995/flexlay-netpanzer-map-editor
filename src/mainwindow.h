@@ -13,6 +13,7 @@ class Minimap;
 class QLabel;
 class QAction;
 class QActionGroup;
+class QMenu;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -22,6 +23,7 @@ public:
 private slots:
     void onOpen();
     void onSave();
+    void populateRecentMenu();
     void onSaveAs();
     void onNewMap();
     void onLoadTileset();
@@ -49,6 +51,8 @@ private:
     void setCurrentFile(const QString& path);
     void updateTitle();
     void applyTileset();
+    void openFile(const QString& path);
+    void addToRecentFiles(const QString& path);
     QString findTileset(const QString& mapPath, const QString& tileSetName) const;
     // Returns true if it is safe to discard the current map (no unsaved changes,
     // or the user chose to save/discard). Returns false if the user cancelled.
@@ -63,10 +67,11 @@ private:
     QLabel*       m_statusZoom = nullptr;
     QLabel*       m_statusObj  = nullptr;
 
-    QAction*      m_undoAct   = nullptr;
-    QAction*      m_redoAct   = nullptr;
-    QAction*      m_saveAct   = nullptr;
-    QActionGroup* m_toolGroup = nullptr;
+    QAction*      m_undoAct    = nullptr;
+    QAction*      m_redoAct    = nullptr;
+    QAction*      m_saveAct    = nullptr;
+    QActionGroup* m_toolGroup  = nullptr;
+    QMenu*        m_recentMenu = nullptr;
 
     QString m_currentFile;
     bool    m_modified = false;
