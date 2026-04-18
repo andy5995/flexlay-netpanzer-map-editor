@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "mapview.h"
 #include "tilepanel.h"
+#include "tilebrowser.h"
+#include "stamppanel.h"
 #include "minimap.h"
 #include "maploader.h"
 #include <QMenuBar>
@@ -21,6 +23,7 @@
 #include <QActionGroup>
 #include <QKeySequence>
 #include <QCloseEvent>
+#include <QTime>
 #include <cmath>
 
 // ---------------------------------------------------------------------------
@@ -37,6 +40,14 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     m_tilePanel = new TilePanel(this);
     addDockWidget(Qt::RightDockWidgetArea, m_tilePanel);
 
+    m_tileBrowser = new TileBrowser(this);
+    addDockWidget(Qt::LeftDockWidgetArea, m_tileBrowser);
+    m_tileBrowser->hide();  // hidden by default, opened from View menu
+
+    m_stampPanel = new StampPanel(this);
+    addDockWidget(Qt::LeftDockWidgetArea, m_stampPanel);
+    m_stampPanel->hide();   // hidden by default
+
     m_minimap = new Minimap(this);
     addDockWidget(Qt::RightDockWidgetArea, m_minimap);
 
@@ -50,10 +61,35 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     connect(m_view, &MapView::objectActivated,        this, &MainWindow::onObjectActivated);
     connect(m_view, &MapView::viewportChanged,        this, &MainWindow::onViewportChanged);
 
-    connect(m_tilePanel, &TilePanel::tileSelected, m_view, &MapView::setSelectedTile);
+    connect(m_tilePanel,   &TilePanel::tileSelected,   m_view, &MapView::setSelectedTile);
+    connect(m_tileBrowser, &TileBrowser::tileSelected, this, [this](int id) {
+        m_view->setSelectedTile(id);
+        m_tilePanel->setSelectedTile(id);
+        m_view->setTool(Tool::TilePaint);
+    });
+    connect(m_tileBrowser, &TileBrowser::stampCreated, this, [this](Stamp s) {
+        m_stampPanel->addStamp(std::move(s));
+        m_view->setCurrentStamp(m_stampPanel->selectedStamp());
+        m_view->setTool(Tool::StampPaint);
+        m_stampPanel->show();
+    });
     connect(m_view, &MapView::tilePicked, this, [this](int id) {
         m_view->setSelectedTile(id);
         m_tilePanel->setSelectedTile(id);
+    });
+    connect(m_stampPanel, &StampPanel::captureRequested, this, [this]() {
+        if (!m_view->hasSelection()) {
+            QMessageBox::information(this, "No selection",
+                "Use the Rect Select tool (R) to drag a region on the map first.");
+            return;
+        }
+        Stamp s = m_view->captureSelection();
+        s.name = QString("Stamp %1").arg(QTime::currentTime().toString("hh:mm:ss"));
+        m_stampPanel->addStamp(std::move(s));
+    });
+    connect(m_stampPanel, &StampPanel::stampSelected, this, [this](const Stamp* stamp) {
+        m_view->setCurrentStamp(stamp);
+        m_view->setTool(Tool::StampPaint);
     });
     connect(m_minimap,   &Minimap::panRequested,   this,   &MainWindow::onMinimapPan);
 }
@@ -125,6 +161,8 @@ void MainWindow::setupMenus()
     const ToolDef defs[] = {
         { "Tile &Paint",      Tool::TilePaint,       Qt::Key_T },
         { "Tile P&ick",       Tool::TilePick,        Qt::Key_I },
+        { "&Rect Select",     Tool::RectSelect,      Qt::Key_R },
+        { "&Stamp Paint",     Tool::StampPaint,      Qt::Key_M },
         { "Place &Outpost",   Tool::PlaceOutpost,    Qt::Key_O },
         { "Place &Spawnpoint",Tool::PlaceSpawnpoint, Qt::Key_S },
         { "Se&lect Object",   Tool::SelectObject,    Qt::Key_V },
@@ -166,6 +204,12 @@ void MainWindow::setupMenus()
     auto* tilePanelAct = m_tilePanel->toggleViewAction();
     tilePanelAct->setText("&Tile Panel");
     view->addAction(tilePanelAct);
+    auto* tileBrowserAct = m_tileBrowser->toggleViewAction();
+    tileBrowserAct->setText("Tile &Browser");
+    view->addAction(tileBrowserAct);
+    auto* stampPanelAct = m_stampPanel->toggleViewAction();
+    stampPanelAct->setText("&Stamps");
+    view->addAction(stampPanelAct);
     auto* minimapAct = m_minimap->toggleViewAction();
     minimapAct->setText("&Minimap");
     view->addAction(minimapAct);
@@ -189,6 +233,8 @@ void MainWindow::setupToolbar()
     const struct { const char* lbl; Tool t; } tbs[] = {
         {"Paint",     Tool::TilePaint},
         {"Pick",      Tool::TilePick},
+        {"Rect Sel",  Tool::RectSelect},
+        {"Stamp",     Tool::StampPaint},
         {"Outpost",   Tool::PlaceOutpost},
         {"Spawn",     Tool::PlaceSpawnpoint},
         {"Select",    Tool::SelectObject},
@@ -281,11 +327,15 @@ void MainWindow::applyTileset()
     if (m_tileset.isValid()) {
         m_view->setTileset(&m_tileset);
         m_tilePanel->setTileset(&m_tileset);
+        m_tileBrowser->setTileset(&m_tileset);
+        m_stampPanel->setTileset(&m_tileset);
         m_minimap->setTileset(&m_tileset);
         m_minimap->rebuildImage();
     } else {
         m_view->setTileset(nullptr);
         m_tilePanel->setTileset(nullptr);
+        m_tileBrowser->setTileset(nullptr);
+        m_stampPanel->setTileset(nullptr);
         m_minimap->setTileset(nullptr);
     }
 }

@@ -12,6 +12,8 @@ qt5_test_dep = dependency('qt5', modules : ['Core', 'Test'])
 moc_headers = [
   'src/mapview.h',
   'src/tilepanel.h',
+  'src/tilebrowser.h',
+  'src/stamppanel.h',
   'src/mainwindow.h',
   'src/minimap.h',
 ]
@@ -23,6 +25,8 @@ editor_sources = [
   'src/mapview.cpp',
   'src/tlsloader.cpp',
   'src/tilepanel.cpp',
+  'src/tilebrowser.cpp',
+  'src/stamppanel.cpp',
   'src/mainwindow.cpp',
   'src/minimap.cpp',
 ]
