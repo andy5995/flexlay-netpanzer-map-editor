@@ -293,6 +293,32 @@ private slots:
     }
 
     // -----------------------------------------------------------------------
+    void testSpnParsing_noNewlines()
+    {
+        // Some real-world .spn files concatenate all tokens on one line.
+        const QString spnText =
+            "SpawnCount: 3Location: 5 10Location: 30 40Location: 99 7";
+        const QString path = writeTempFile(spnText.toUtf8(), ".spn");
+
+        const QString npmPath = path.chopped(4) + ".npm";
+        const QByteArray npm = makeNpm(128, 128, {});
+        QFile nf(npmPath); nf.open(QIODevice::WriteOnly); nf.write(npm);
+
+        const Map loaded = MapLoader::load(npmPath);
+        QVERIFY(loaded.isValid());
+
+        int spawns = 0;
+        for (const auto& obj : loaded.objects)
+            if (obj.type == "spawnpoint") ++spawns;
+        QCOMPARE(spawns, 3);
+
+        QCOMPARE(loaded.objects[0].x, 5);
+        QCOMPARE(loaded.objects[0].y, 10);
+        QCOMPARE(loaded.objects[2].x, 99);
+        QCOMPARE(loaded.objects[2].y, 7);
+    }
+
+    // -----------------------------------------------------------------------
     void testOptWrite_roundTrip()
     {
         Map orig;
