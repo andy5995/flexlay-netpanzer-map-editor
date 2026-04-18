@@ -15,6 +15,7 @@
 
 enum class Tool {
     TilePaint,       // left-drag paints selected tile
+    EllipsePaint,    // drag to paint selected tile along ellipse outline
     TilePick,        // left-click picks tile under cursor, switches to TilePaint
     RectSelect,      // drag to select a rectangular tile region
     StampPaint,      // click to place the current stamp
@@ -144,6 +145,13 @@ private:
 
     // Outpost placement hover (tile coords, (-1,-1) = none)
     QPoint m_outpostHoverTile = QPoint(-1, -1);
+
+    // Ellipse paint state
+    QPoint m_ellipseStart;
+    QPoint m_ellipseEnd;
+    bool   m_ellipseActive = false;
+
+    static std::vector<QPoint> computeEllipseTiles(QPoint a, QPoint b, int mapW, int mapH);
 
     // Pan state (middle button)
     bool   m_panning   = false;
