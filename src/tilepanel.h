@@ -2,6 +2,7 @@
 #include <QDockWidget>
 #include <QWidget>
 #include <QPixmap>
+#include <QScrollArea>
 #include "tlsloader.h"
 
 // Internal scrollable widget that renders the tile grid.
@@ -16,6 +17,9 @@ public:
     const Tileset* tileset() const { return m_tileset; }
 
     int selectedTile() const { return m_selectedTile; }
+    void setSelectedTile(int id);
+
+    int cols() const;
 
 signals:
     void tileSelected(int id);
@@ -27,7 +31,6 @@ protected:
     QSize sizeHint() const override;
 
 private:
-    int cols() const;
     int tileAt(QPoint pos) const;
 
     const Tileset* m_tileset = nullptr;
@@ -46,6 +49,7 @@ public:
     explicit TilePanel(QWidget* parent = nullptr);
 
     void setTileset(const Tileset* ts);
+    void setSelectedTile(int id);
     TilePanelWidget* panelWidget() const { return m_widget; }
 
 signals:
@@ -53,4 +57,5 @@ signals:
 
 private:
     TilePanelWidget* m_widget;
+    QScrollArea*     m_scroll;
 };
