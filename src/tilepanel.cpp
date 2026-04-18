@@ -18,9 +18,15 @@ TilePanelWidget::TilePanelWidget(QWidget* parent)
 
 int TilePanelWidget::cols() const
 {
-    // Use as many columns as fit into our current width, minimum 1.
     const int available = std::max(width(), RENDER_SIZE);
     return std::max(1, available / RENDER_SIZE);
+}
+
+void TilePanelWidget::setSelectedTile(int id)
+{
+    if (id == m_selectedTile) return;
+    m_selectedTile = id;
+    update();
 }
 
 QSize TilePanelWidget::sizeHint() const
@@ -127,15 +133,15 @@ void TilePanelWidget::mouseMoveEvent(QMouseEvent* ev)
 TilePanel::TilePanel(QWidget* parent)
     : QDockWidget("Tiles", parent)
     , m_widget(new TilePanelWidget())
+    , m_scroll(new QScrollArea())
 {
     setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
 
-    auto* scroll = new QScrollArea();
-    scroll->setWidget(m_widget);
-    scroll->setWidgetResizable(true);
-    scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    setWidget(scroll);
+    m_scroll->setWidget(m_widget);
+    m_scroll->setWidgetResizable(true);
+    m_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    setWidget(m_scroll);
 
     connect(m_widget, &TilePanelWidget::tileSelected,
             this,     &TilePanel::tileSelected);
@@ -144,4 +150,16 @@ TilePanel::TilePanel(QWidget* parent)
 void TilePanel::setTileset(const Tileset* ts)
 {
     m_widget->setTileset(ts);
+}
+
+void TilePanel::setSelectedTile(int id)
+{
+    m_widget->setSelectedTile(id);
+    // Scroll so the selected tile is visible
+    const int c   = m_widget->cols();
+    const int col = id % c;
+    const int row = id / c;
+    const int x   = col * TilePanelWidget::RENDER_SIZE;
+    const int y   = row * TilePanelWidget::RENDER_SIZE;
+    m_scroll->ensureVisible(x, y, TilePanelWidget::RENDER_SIZE, TilePanelWidget::RENDER_SIZE);
 }

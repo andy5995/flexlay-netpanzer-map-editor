@@ -78,10 +78,11 @@ void MapView::setTool(Tool t)
     emit objectSelectionChanged(-1);
 
     switch (t) {
-    case Tool::SelectObject:   setCursor(Qt::ArrowCursor); break;
+    case Tool::TilePick:        setCursor(Qt::PointingHandCursor); break;
+    case Tool::SelectObject:    setCursor(Qt::ArrowCursor); break;
     case Tool::PlaceOutpost:
     case Tool::PlaceSpawnpoint: setCursor(Qt::CrossCursor); break;
-    default:                   setCursor(Qt::ArrowCursor); break;
+    default:                    setCursor(Qt::ArrowCursor); break;
     }
 }
 
@@ -357,6 +358,16 @@ void MapView::mousePressEvent(QMouseEvent* ev)
     if (ev->button() != Qt::LeftButton) return;
 
     switch (m_tool) {
+    case Tool::TilePick: {
+        int tx, ty;
+        if (widgetToTile(ev->pos(), tx, ty)) {
+            const int id = m_map.tiles[size_t(ty * m_map.width + tx)];
+            m_selectedTile = id;
+            emit tilePicked(id);
+            setTool(Tool::TilePaint);
+        }
+        break;
+    }
     case Tool::TilePaint: {
         startStroke();
         int tx, ty;

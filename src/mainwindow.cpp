@@ -51,6 +51,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     connect(m_view, &MapView::viewportChanged,        this, &MainWindow::onViewportChanged);
 
     connect(m_tilePanel, &TilePanel::tileSelected, m_view, &MapView::setSelectedTile);
+    connect(m_view, &MapView::tilePicked, this, [this](int id) {
+        m_view->setSelectedTile(id);
+        m_tilePanel->setSelectedTile(id);
+    });
     connect(m_minimap,   &Minimap::panRequested,   this,   &MainWindow::onMinimapPan);
 }
 
@@ -120,6 +124,7 @@ void MainWindow::setupMenus()
     struct ToolDef { const char* label; Tool tool; QKeySequence key; };
     const ToolDef defs[] = {
         { "Tile &Paint",      Tool::TilePaint,       Qt::Key_T },
+        { "Tile P&ick",       Tool::TilePick,        Qt::Key_I },
         { "Place &Outpost",   Tool::PlaceOutpost,    Qt::Key_O },
         { "Place &Spawnpoint",Tool::PlaceSpawnpoint, Qt::Key_S },
         { "Se&lect Object",   Tool::SelectObject,    Qt::Key_V },
@@ -183,6 +188,7 @@ void MainWindow::setupToolbar()
     // Tools (checkable buttons mirroring the menu)
     const struct { const char* lbl; Tool t; } tbs[] = {
         {"Paint",     Tool::TilePaint},
+        {"Pick",      Tool::TilePick},
         {"Outpost",   Tool::PlaceOutpost},
         {"Spawn",     Tool::PlaceSpawnpoint},
         {"Select",    Tool::SelectObject},

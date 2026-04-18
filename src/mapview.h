@@ -13,6 +13,7 @@
 
 enum class Tool {
     TilePaint,       // left-drag paints selected tile
+    TilePick,        // left-click picks tile under cursor, switches to TilePaint
     PlaceOutpost,    // left-click places an outpost
     PlaceSpawnpoint, // left-click places a spawn point
     SelectObject     // left-click selects/drags objects; Del removes
@@ -67,6 +68,7 @@ public:
 
 signals:
     void tileHovered(int tileX, int tileY, int tileId);
+    void tilePicked(int tileId);   // emitted when TilePick tool clicks a tile
     void mapModified();
     void objectSelectionChanged(int idx); // -1 = none
     void objectActivated(int idx);        // double-click on an object
