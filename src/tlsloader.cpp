@@ -1,6 +1,8 @@
 #include "tlsloader.h"
 #include "npmformat.h"
 #include <QFile>
+#include <QFileInfo>
+#include <QDir>
 #include <algorithm>
 
 bool Tileset::load(const QString& path)
@@ -30,6 +32,25 @@ bool Tileset::load(const QString& path)
     for (int i = 0; i < 256; ++i) {
         const int base = TLS_OFF_PALETTE + i * 3;
         palette[i] = qRgb(buf[base], buf[base + 1], buf[base + 2]);
+    }
+
+    // The game renders tiles using an external netp.act palette, not the
+    // TLS-embedded one. Walk up from the TLS file's directory to find it.
+    {
+        QDir dir = QFileInfo(path).absoluteDir();
+        for (int attempt = 0; attempt < 5; ++attempt) {
+            QFile actFile(dir.filePath("netp.act"));
+            if (actFile.open(QIODevice::ReadOnly)) {
+                const QByteArray actData = actFile.readAll();
+                if (actData.size() >= 768) {
+                    const auto* ab = reinterpret_cast<const unsigned char*>(actData.constData());
+                    for (int i = 0; i < 256; ++i)
+                        palette[i] = qRgb(ab[i*3], ab[i*3+1], ab[i*3+2]);
+                }
+                break;
+            }
+            if (!dir.cdUp()) break;
+        }
     }
 
     // Tile headers immediately after fixed header block
