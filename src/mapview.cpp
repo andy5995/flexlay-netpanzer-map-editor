@@ -75,6 +75,7 @@ void MapView::setTool(Tool t)
     commitStroke();
     m_draggingObj = false;
     m_selectedObj = -1;
+    m_outpostHoverTile = QPoint(-1, -1);
     emit objectSelectionChanged(-1);
 
     switch (t) {
@@ -400,6 +401,36 @@ void MapView::paintEvent(QPaintEvent*)
         }
     }
 
+    // Outpost capture-pad overlay.
+    // The game places the pad at marker_center + (224, 48) px with a
+    // ±48 x ±32 px capture box (Objective.cpp, occupation_pad_offset).
+    auto drawCapturePad = [&](QPointF markerCentre, bool ghost) {
+        const QPointF padCentre = markerCentre + QPointF(224, 48);
+        const QRectF  padRect(padCentre.x() - 48, padCentre.y() - 32, 96, 64);
+        p.setOpacity(ghost ? 0.45 : 0.75);
+        p.setBrush(QColor(255, 200, 0, 50));
+        p.setPen(QPen(QColor(255, 200, 0), ghost ? 0.5 : 1.0));
+        p.drawRect(padRect);
+        p.setBrush(Qt::NoBrush);
+        p.setPen(QPen(QColor(255, 200, 0, 160), 0.5, Qt::DashLine));
+        p.drawLine(markerCentre, padCentre);
+        p.setOpacity(1.0);
+    };
+
+    // Selected outpost
+    if (m_selectedObj >= 0 && m_selectedObj < int(m_map.objects.size())) {
+        const auto& obj = m_map.objects[size_t(m_selectedObj)];
+        if (obj.type == "outpost")
+            drawCapturePad(QPointF((obj.x + 0.5) * TILE_SIZE,
+                                   (obj.y + 0.5) * TILE_SIZE), false);
+    }
+
+    // Ghost while hovering to place
+    if (m_tool == Tool::PlaceOutpost && m_outpostHoverTile.x() >= 0) {
+        drawCapturePad(QPointF((m_outpostHoverTile.x() + 0.5) * TILE_SIZE,
+                                (m_outpostHoverTile.y() + 0.5) * TILE_SIZE), true);
+    }
+
     // Map border
     p.setBrush(Qt::NoBrush);
     p.setPen(QPen(QColor(200, 200, 200), 0));
@@ -562,6 +593,16 @@ void MapView::mouseMoveEvent(QMouseEvent* ev)
         }
     }
 
+    if (m_tool == Tool::PlaceOutpost) {
+        int tx, ty;
+        const QPoint newHover = widgetToTile(ev->pos(), tx, ty)
+                                ? QPoint(tx, ty) : QPoint(-1, -1);
+        if (newHover != m_outpostHoverTile) {
+            m_outpostHoverTile = newHover;
+            update();
+        }
+    }
+
     if (m_tool == Tool::StampPaint) {
         int tx, ty;
         const QPoint newHover = widgetToTile(ev->pos(), tx, ty)
@@ -637,6 +678,10 @@ void MapView::leaveEvent(QEvent*)
     m_draggingObj = false;
     if (m_tool == Tool::StampPaint && m_stampHoverTile.x() >= 0) {
         m_stampHoverTile = QPoint(-1, -1);
+        update();
+    }
+    if (m_tool == Tool::PlaceOutpost && m_outpostHoverTile.x() >= 0) {
+        m_outpostHoverTile = QPoint(-1, -1);
         update();
     }
 }
