@@ -166,6 +166,7 @@ void MainWindow::setupMenus()
     struct ToolDef { const char* label; const char* iconText; Tool tool; QKeySequence key; };
     const ToolDef defs[] = {
         { "Tile &Paint",       "Paint",    Tool::TilePaint,       Qt::Key_T },
+        { "&Ellipse Paint",    "Ellipse",  Tool::EllipsePaint,    Qt::Key_E },
         { "Tile P&ick",        "Pick",     Tool::TilePick,        Qt::Key_I },
         { "&Rect Select",      "Rect Sel", Tool::RectSelect,      Qt::Key_R },
         { "&Stamp Paint",      "Stamp",    Tool::StampPaint,      Qt::Key_M },
@@ -622,8 +623,8 @@ void MainWindow::onSetTool(Tool t)
     // Sync tile panel: only useful when painting
     m_tilePanel->setVisible(t == Tool::TilePaint);
 
-    const char* names[] = {"Tile Paint", "Tile Pick", "Rect Select", "Stamp Paint",
-                            "Place Outpost", "Place Spawnpoint", "Select Object"};
+    const char* names[] = {"Tile Paint", "Ellipse Paint", "Tile Pick", "Rect Select",
+                            "Stamp Paint", "Place Outpost", "Place Spawnpoint", "Select Object"};
     statusBar()->showMessage(
         QString("Tool: %1").arg(names[int(t)]), 2000);
 }

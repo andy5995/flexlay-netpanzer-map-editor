@@ -8,6 +8,7 @@
 #include <QMenu>
 #include <QInputDialog>
 #include <algorithm>
+#include <cmath>
 
 // ---------------------------------------------------------------------------
 // Construction
@@ -76,10 +77,12 @@ void MapView::setTool(Tool t)
     m_draggingObj = false;
     m_selectedObj = -1;
     m_outpostHoverTile = QPoint(-1, -1);
+    m_ellipseActive = false;
     emit objectSelectionChanged(-1);
 
     switch (t) {
     case Tool::TilePick:        setCursor(Qt::PointingHandCursor); break;
+    case Tool::EllipsePaint:
     case Tool::RectSelect:      setCursor(Qt::CrossCursor); break;
     case Tool::StampPaint:      setCursor(Qt::CrossCursor); break;
     case Tool::SelectObject:    setCursor(Qt::ArrowCursor); break;
@@ -285,6 +288,36 @@ void MapView::deleteSelectedObject()
 }
 
 // ---------------------------------------------------------------------------
+// Ellipse outline tile set (parametric, sufficient steps to avoid gaps)
+
+std::vector<QPoint> MapView::computeEllipseTiles(QPoint a, QPoint b, int mapW, int mapH)
+{
+    const double cx = (a.x() + b.x()) / 2.0;
+    const double cy = (a.y() + b.y()) / 2.0;
+    const double rx = std::abs(b.x() - a.x()) / 2.0;
+    const double ry = std::abs(b.y() - a.y()) / 2.0;
+
+    // Approximate perimeter (Ramanujan) to choose step count
+    const double h    = ((rx - ry) * (rx - ry)) / ((rx + ry) * (rx + ry) + 1e-9);
+    const double peri = M_PI * (rx + ry) * (1 + 3*h / (10 + std::sqrt(4 - 3*h)));
+    const int steps   = std::max(8, int(std::ceil(peri * 2)));
+
+    std::vector<bool>   visited(size_t(mapW * mapH), false);
+    std::vector<QPoint> result;
+    for (int i = 0; i < steps; ++i) {
+        const double angle = 2.0 * M_PI * i / steps;
+        const int tx = std::clamp(int(std::round(cx + rx * std::cos(angle))), 0, mapW - 1);
+        const int ty = std::clamp(int(std::round(cy + ry * std::sin(angle))), 0, mapH - 1);
+        const size_t idx = size_t(ty * mapW + tx);
+        if (!visited[idx]) {
+            visited[idx] = true;
+            result.push_back(QPoint(tx, ty));
+        }
+    }
+    return result;
+}
+
+// ---------------------------------------------------------------------------
 // Paint event
 
 void MapView::paintEvent(QPaintEvent*)
@@ -401,6 +434,19 @@ void MapView::paintEvent(QPaintEvent*)
         }
     }
 
+    // Ellipse paint preview
+    if (m_tool == Tool::EllipsePaint && m_ellipseActive) {
+        const auto tiles = computeEllipseTiles(m_ellipseStart, m_ellipseEnd,
+                                               m_map.width, m_map.height);
+        p.setOpacity(0.55);
+        p.setPen(Qt::NoPen);
+        p.setBrush(QColor(255, 220, 0));
+        for (const QPoint& pt : tiles)
+            p.fillRect(QRectF(pt.x() * TILE_SIZE, pt.y() * TILE_SIZE,
+                              TILE_SIZE, TILE_SIZE), QColor(255, 220, 0, 180));
+        p.setOpacity(1.0);
+    }
+
     // Outpost capture-pad overlay.
     // The game places the pad at marker_center + (224, 48) px with a
     // ±48 x ±32 px capture box (Objective.cpp, occupation_pad_offset).
@@ -478,6 +524,16 @@ void MapView::mousePressEvent(QMouseEvent* ev)
     if (ev->button() != Qt::LeftButton) return;
 
     switch (m_tool) {
+    case Tool::EllipsePaint: {
+        int tx, ty;
+        if (widgetToTile(ev->pos(), tx, ty)) {
+            m_ellipseStart  = QPoint(tx, ty);
+            m_ellipseEnd    = QPoint(tx, ty);
+            m_ellipseActive = true;
+            update();
+        }
+        break;
+    }
     case Tool::TilePick: {
         int tx, ty;
         if (widgetToTile(ev->pos(), tx, ty)) {
@@ -593,6 +649,17 @@ void MapView::mouseMoveEvent(QMouseEvent* ev)
         }
     }
 
+    if (m_tool == Tool::EllipsePaint && m_ellipseActive && (ev->buttons() & Qt::LeftButton)) {
+        int tx, ty;
+        if (widgetToTile(ev->pos(), tx, ty)) {
+            const QPoint newEnd(tx, ty);
+            if (newEnd != m_ellipseEnd) {
+                m_ellipseEnd = newEnd;
+                update();
+            }
+        }
+    }
+
     if (m_tool == Tool::PlaceOutpost) {
         int tx, ty;
         const QPoint newHover = widgetToTile(ev->pos(), tx, ty)
@@ -646,6 +713,27 @@ void MapView::mouseReleaseEvent(QMouseEvent* ev)
     }
 
     if (ev->button() == Qt::LeftButton) {
+        if (m_tool == Tool::EllipsePaint && m_ellipseActive) {
+            m_ellipseActive = false;
+            const auto tiles = computeEllipseTiles(m_ellipseStart, m_ellipseEnd,
+                                                   m_map.width, m_map.height);
+            auto batch = std::make_unique<TileBatch>();
+            for (const QPoint& pt : tiles) {
+                const int idx     = pt.y() * m_map.width + pt.x();
+                const uint16_t ov = m_map.tiles[size_t(idx)];
+                const uint16_t nv = uint16_t(m_selectedTile);
+                if (ov != nv) {
+                    m_map.tiles[size_t(idx)] = nv;
+                    batch->edits.push_back({idx, ov, nv});
+                }
+            }
+            if (!batch->empty()) {
+                pushCommand(std::move(batch));
+                emit mapModified();
+            }
+            update();
+        }
+
         if (m_tool == Tool::TilePaint)
             commitStroke();
 
