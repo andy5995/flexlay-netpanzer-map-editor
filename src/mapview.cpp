@@ -567,6 +567,8 @@ void MapView::mouseMoveEvent(QMouseEvent* ev)
         if (newHover != m_stampHoverTile) {
             m_stampHoverTile = newHover;
             update();
+            if ((ev->buttons() & Qt::LeftButton) && newHover.x() >= 0)
+                applyStamp(tx, ty);
         }
     }
 
