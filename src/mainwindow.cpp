@@ -601,8 +601,8 @@ void MainWindow::onSetTool(Tool t)
     // Sync tile panel: only useful when painting
     m_tilePanel->setVisible(t == Tool::TilePaint);
 
-    const char* names[] = {"Tile Paint", "Place Outpost",
-                            "Place Spawnpoint", "Select Object"};
+    const char* names[] = {"Tile Paint", "Tile Pick", "Rect Select", "Stamp Paint",
+                            "Place Outpost", "Place Spawnpoint", "Select Object"};
     statusBar()->showMessage(
         QString("Tool: %1").arg(names[int(t)]), 2000);
 }

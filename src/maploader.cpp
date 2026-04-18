@@ -82,7 +82,11 @@ void MapLoader::loadSpn(const QString& path, Map& m)
     QFile f(path);
     if (!f.open(QIODevice::ReadOnly | QIODevice::Text))
         return;
-    QTextStream in(&f);
+
+    // Some .spn files have no newlines between tokens; normalize before parsing.
+    QString text = QString::fromLatin1(f.readAll());
+    text.replace("Location:", "\nLocation:");
+    QTextStream in(&text, QIODevice::ReadOnly);
 
     while (!in.atEnd()) {
         QString line = in.readLine().trimmed();
