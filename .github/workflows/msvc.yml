@@ -46,7 +46,10 @@ jobs:
         run: echo "${{ env.QT_DIR }}\${{ env.QT_VERSION }}\msvc2019_64\bin" | Out-File -Append -FilePath $env:GITHUB_PATH
 
       - name: Install Meson and Ninja
-        run: pip install meson ninja
+        # Pin to <1.11 to avoid mesonbuild/meson#15705: Qt tool detection
+        # regression in 1.11.0 that crashes with 'NoneType has no attribute
+        # extend' on Windows/qmake. Remove pin once upstream fixes it.
+        run: pip install 'meson<1.11' ninja
 
       - name: Set up MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
