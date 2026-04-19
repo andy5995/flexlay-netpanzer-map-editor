@@ -8,12 +8,19 @@ Features
 
 - Open and save netPanzer .npm maps (binary format, verified round-trip)
 - Tile painting with full undo/redo
+- Ellipse paint tool — drag to paint tiles along an ellipse outline
+- Rect select and stamp system — drag-select a region, save as a stamp, place with one click
+- Tile pick tool — click any map tile to select it for painting
+- Autotile — automatic transition-tile selection based on 8-neighbour bitmask;
+  enabled when a .autotile.json sidecar is found alongside the tileset
+  (summer12mb grass group included; see docs/autotile-format.md)
+- Tile browser with jump-to-ID search
 - Place and move outpost and spawn-point objects
 - Object renaming via double-click or context menu
 - Minimap with viewport overlay and click-to-pan
-- Tileset tile picker dock
 - Zoom toward cursor
-- Keyboard shortcuts: T (tile paint), O (place outpost), S (spawn point), V (select)
+- Keyboard shortcuts: T (tile paint), E (ellipse), I (pick), R (rect select),
+  M (stamp), O (place outpost), S (spawn point), V (select object), G (grid)
 
 Building
 --------
