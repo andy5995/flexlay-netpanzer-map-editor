@@ -26,8 +26,10 @@ void StampWidget::setTileset(const Tileset* ts)
 void StampWidget::addStamp(Stamp s)
 {
     m_stamps.push_back(std::move(s));
+    m_selected = int(m_stamps.size()) - 1;
     updateGeometry();
     update();
+    emit stampSelected(&m_stamps.back());
 }
 
 void StampWidget::clear()
