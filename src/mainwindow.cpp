@@ -78,6 +78,12 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
         m_view->setTool(Tool::StampPaint);
         m_stampPanel->show();
     });
+    connect(m_tilePanel, &TilePanel::stampCreated, this, [this](Stamp s) {
+        m_stampPanel->addStamp(std::move(s));
+        m_view->setCurrentStamp(m_stampPanel->selectedStamp());
+        m_view->setTool(Tool::StampPaint);
+        m_stampPanel->show();
+    });
     connect(m_view, &MapView::tilePicked, this, [this](int id) {
         m_view->setSelectedTile(id);
         m_tilePanel->setSelectedTile(id);

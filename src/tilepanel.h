@@ -4,6 +4,7 @@
 #include <QPixmap>
 #include <QScrollArea>
 #include "tlsloader.h"
+#include "stamp.h"
 
 // Internal scrollable widget that renders the tile grid.
 class TilePanelWidget : public QWidget {
@@ -23,15 +24,19 @@ public:
 
 signals:
     void tileSelected(int id);
+    void stampCreated(Stamp s);
 
 protected:
     void paintEvent(QPaintEvent* ev) override;
     void mousePressEvent(QMouseEvent* ev) override;
     void mouseMoveEvent(QMouseEvent* ev) override;
+    void mouseReleaseEvent(QMouseEvent* ev) override;
     QSize sizeHint() const override;
 
 private:
-    int tileAt(QPoint pos) const;
+    QPoint gridPos(QPoint widgetPos) const;
+    int    tileAt(QPoint pos) const;
+    int    tileIdAtGrid(int col, int row) const;
 
     const Tileset* m_tileset = nullptr;
     QPixmap        m_atlasPixmap;
@@ -39,6 +44,10 @@ private:
 
     int m_selectedTile = 0;
     int m_hoveredTile  = -1;
+
+    bool   m_dragging = false;
+    QPoint m_selStart;
+    QPoint m_selEnd;
 };
 
 
@@ -54,6 +63,7 @@ public:
 
 signals:
     void tileSelected(int id);
+    void stampCreated(Stamp s);
 
 private:
     TilePanelWidget* m_widget;
