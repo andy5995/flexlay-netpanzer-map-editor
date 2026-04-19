@@ -4,6 +4,7 @@
 #include <QPixmap>
 #include <QPoint>
 #include <QScrollArea>
+#include <QSpinBox>
 #include "tlsloader.h"
 #include "stamp.h"
 
@@ -15,6 +16,8 @@ public:
     void setTileset(const Tileset* ts);
     void setTileSize(int px);
     int  tileSize() const { return m_tileSize; }
+    int  cols() const;
+    void selectTile(int id);
 
 signals:
     void tileSelected(int id);
@@ -26,10 +29,11 @@ protected:
     void mouseMoveEvent(QMouseEvent*) override;
     void mouseReleaseEvent(QMouseEvent*) override;
     void leaveEvent(QEvent*) override;
+    void resizeEvent(QResizeEvent*) override;
     QSize sizeHint() const override;
 
 private:
-    int    cols() const;
+    void   updateContentHeight();
     QPoint gridPos(QPoint widgetPos) const;   // (col, row) in tile grid
     int    tileIdAt(QPoint grid) const;       // tile id from grid pos, -1 if OOB
 
@@ -52,6 +56,7 @@ public:
     explicit TileBrowser(QWidget* parent = nullptr);
 
     void setTileset(const Tileset* ts);
+    void selectTile(int id);  // selects tile and makes it visible
 
 signals:
     void tileSelected(int id);
@@ -60,4 +65,5 @@ signals:
 private:
     TileBrowserWidget* m_widget;
     QScrollArea*       m_scroll;
+    QSpinBox*          m_gotoSpin;
 };

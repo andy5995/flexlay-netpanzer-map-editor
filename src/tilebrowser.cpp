@@ -3,8 +3,12 @@
 #include <QPaintEvent>
 #include <QMouseEvent>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QComboBox>
 #include <QLabel>
+#include <QPushButton>
+#include <QScrollBar>
+#include <QDebug>
 #include <algorithm>
 
 // ---------------------------------------------------------------------------
@@ -23,14 +27,33 @@ void TileBrowserWidget::setTileset(const Tileset* ts)
     m_atlasPixmap = QPixmap();
     m_selectedTile = 0;
     m_hoveredTile  = -1;
-    updateGeometry();
+    updateContentHeight();
     update();
+}
+
+void TileBrowserWidget::selectTile(int id)
+{
+    if (!m_tileset || !m_tileset->isValid()) return;
+    if (id < 0 || id >= m_tileset->tileCount()) return;
+    m_selectedTile = id;
+    update();
+}
+
+void TileBrowserWidget::updateContentHeight()
+{
+    if (m_tileset && m_tileset->isValid()) {
+        const int c    = cols();
+        const int rows = (m_tileset->tileCount() + c - 1) / c;
+        setMinimumHeight(rows * m_tileSize);
+    } else {
+        setMinimumHeight(200);
+    }
 }
 
 void TileBrowserWidget::setTileSize(int px)
 {
     m_tileSize = px;
-    updateGeometry();
+    updateContentHeight();
     update();
 }
 
@@ -198,6 +221,12 @@ void TileBrowserWidget::leaveEvent(QEvent*)
     update();
 }
 
+void TileBrowserWidget::resizeEvent(QResizeEvent* ev)
+{
+    QWidget::resizeEvent(ev);
+    updateContentHeight();
+}
+
 // ---------------------------------------------------------------------------
 // TileBrowser
 
@@ -205,6 +234,7 @@ TileBrowser::TileBrowser(QWidget* parent)
     : QDockWidget("Tile Browser", parent)
     , m_widget(new TileBrowserWidget())
     , m_scroll(new QScrollArea())
+    , m_gotoSpin(new QSpinBox())
 {
     setAllowedAreas(Qt::AllDockWidgetAreas);
     setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable
@@ -216,6 +246,24 @@ TileBrowser::TileBrowser(QWidget* parent)
     sizeCombo->addItem("Large (96px)",  96);
     sizeCombo->setCurrentIndex(1);
 
+    m_gotoSpin->setPrefix("Tile: ");
+    m_gotoSpin->setRange(0, 99999);
+    m_gotoSpin->setKeyboardTracking(false);
+    m_gotoSpin->setToolTip("Go to tile ID");
+
+    auto* goBtn = new QPushButton("Go");
+    goBtn->setFixedWidth(32);
+    connect(goBtn, &QPushButton::clicked,
+            this, [this]() { selectTile(m_gotoSpin->value()); });
+
+    auto* topBar    = new QWidget();
+    auto* topLayout = new QHBoxLayout(topBar);
+    topLayout->setContentsMargins(0, 0, 0, 0);
+    topLayout->setSpacing(4);
+    topLayout->addWidget(sizeCombo, 1);
+    topLayout->addWidget(m_gotoSpin);
+    topLayout->addWidget(goBtn);
+
     m_scroll->setWidget(m_widget);
     m_scroll->setWidgetResizable(true);
     m_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
@@ -224,7 +272,7 @@ TileBrowser::TileBrowser(QWidget* parent)
     auto* layout    = new QVBoxLayout(container);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(2);
-    layout->addWidget(sizeCombo);
+    layout->addWidget(topBar);
     layout->addWidget(m_scroll);
     setWidget(container);
 
@@ -233,10 +281,30 @@ TileBrowser::TileBrowser(QWidget* parent)
         m_widget->setTileSize(sizeCombo->currentData().toInt());
     });
 
+    connect(m_gotoSpin, &QSpinBox::editingFinished,
+            this, [this]() { selectTile(m_gotoSpin->value()); });
+
     connect(m_widget, &TileBrowserWidget::tileSelected,
-            this,     &TileBrowser::tileSelected);
+            this, [this](int id) {
+        QSignalBlocker b(m_gotoSpin);
+        m_gotoSpin->setValue(id);
+        emit tileSelected(id);
+    });
     connect(m_widget, &TileBrowserWidget::stampCreated,
             this,     &TileBrowser::stampCreated);
+}
+
+void TileBrowser::selectTile(int id)
+{
+    m_widget->selectTile(id);
+    const int c   = m_widget->cols();
+    const int row = (c > 0) ? id / c : 0;
+    const int y   = row * m_widget->tileSize();
+    auto* vsb = m_scroll->verticalScrollBar();
+    qDebug() << "selectTile" << id << "cols" << c << "row" << row
+             << "y" << y << "sbMax" << vsb->maximum() << "wWidth" << m_widget->width();
+    vsb->setValue(y);
+    emit tileSelected(id);
 }
 
 void TileBrowser::setTileset(const Tileset* ts)

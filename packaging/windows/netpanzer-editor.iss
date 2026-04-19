@@ -37,6 +37,8 @@ Source: "..\..\_staging\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\_staging\*.dll";     DestDir: "{app}"; Flags: ignoreversion
 ; Qt5 platform plugin — required for any Qt5 GUI app on Windows
 Source: "..\..\_staging\platforms\*"; DestDir: "{app}\platforms"; Flags: ignoreversion
+; Bundled autotile data
+Source: "..\..\data\autotile\*"; DestDir: "{app}\data\autotile"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}";           Filename: "{app}\{#AppExe}"

@@ -5,6 +5,7 @@
 #include "stamppanel.h"
 #include "minimap.h"
 #include "maploader.h"
+#include "autotileset.h"
 #include <QMenuBar>
 #include <QToolBar>
 #include <QStatusBar>
@@ -25,6 +26,7 @@
 #include <QCloseEvent>
 #include <QTime>
 #include <QSettings>
+#include <QCoreApplication>
 #include <cmath>
 
 static constexpr int MAX_RECENT = 8;
@@ -79,6 +81,14 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     connect(m_view, &MapView::tilePicked, this, [this](int id) {
         m_view->setSelectedTile(id);
         m_tilePanel->setSelectedTile(id);
+    });
+    connect(m_view, &MapView::toolChanged, this, [this](Tool t) {
+        for (QAction* a : m_toolGroup->actions()) {
+            if (static_cast<Tool>(a->data().toInt()) == t) {
+                a->setChecked(true);
+                break;
+            }
+        }
     });
     connect(m_stampPanel, &StampPanel::captureRequested, this, [this]() {
         if (!m_view->hasSelection()) {
@@ -185,6 +195,13 @@ void MainWindow::setupMenus()
     }
     m_toolGroup->actions().first()->setChecked(true);
 
+    tools->addSeparator();
+    m_autotileAct = tools->addAction("&Autotile");
+    m_autotileAct->setCheckable(true);
+    m_autotileAct->setEnabled(false);
+    connect(m_autotileAct, &QAction::toggled, this,
+            [this](bool on) { m_view->setAutotileEnabled(on); });
+
     // View
     QMenu* view = menuBar()->addMenu("&View");
 
@@ -241,6 +258,8 @@ void MainWindow::setupToolbar()
     // checked state and the exclusive group handles mutual exclusivity.
     for (QAction* a : m_toolGroup->actions())
         tb->addAction(a);
+    tb->addSeparator();
+    tb->addAction(m_autotileAct);
 }
 
 // ---------------------------------------------------------------------------
@@ -379,6 +398,7 @@ void MainWindow::openFile(const QString& fn)
     if (!tsPath.isEmpty()) {
         if (m_tileset.load(tsPath)) {
             applyTileset();
+            loadAutotileData(tsPath);
             statusBar()->showMessage("Tileset: " + QFileInfo(tsPath).fileName(), 4000);
         } else {
             QMessageBox::warning(this, "Tileset error",
@@ -556,6 +576,36 @@ void MainWindow::onNewMap()
     m_redoAct->setEnabled(false);
 }
 
+void MainWindow::loadAutotileData(const QString& tlsPath)
+{
+    const QFileInfo fi(tlsPath);
+    const QString stem = fi.completeBaseName();
+    const QString sidecar = stem + ".autotile.json";
+
+    QStringList candidates = {
+        fi.dir().filePath(sidecar),
+        QCoreApplication::applicationDirPath() + "/../share/netpanzer-editor/autotile/" + sidecar,
+        QCoreApplication::applicationDirPath() + "/data/autotile/" + sidecar,
+        QCoreApplication::applicationDirPath() + "/../data/autotile/" + sidecar,
+    };
+
+    for (const QString& path : candidates) {
+        AutotileSet ats;
+        if (ats.load(path)) {
+            m_view->setAutotileSet(std::move(ats));
+            m_autotileAct->setEnabled(true);
+            m_autotileAct->setChecked(true);
+            return;
+        }
+    }
+
+    // No sidecar found — disable autotile
+    m_view->setAutotileSet(AutotileSet{});
+    m_view->setAutotileEnabled(false);
+    m_autotileAct->setChecked(false);
+    m_autotileAct->setEnabled(false);
+}
+
 void MainWindow::onLoadTileset()
 {
     const QString fn = QFileDialog::getOpenFileName(
@@ -568,6 +618,7 @@ void MainWindow::onLoadTileset()
         return;
     }
     applyTileset();
+    loadAutotileData(fn);
     statusBar()->showMessage("Tileset: " + QFileInfo(fn).fileName(), 4000);
 }
 
