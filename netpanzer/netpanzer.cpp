@@ -126,7 +126,7 @@ NetPanzerData::load_data(const std::string& datadir_)
   datadir = datadir_;
   std::cout << "NetPanzerData: Loading data from '" << datadir << "'" << std::endl;
   palette = load_palette(datadir + "/" + "wads/netp.act");
-  load_tileset(datadir + "/" + "wads/summer12mb.tls");
+  load_tileset(datadir + "/" + "wads/summer12mb/SummerDay/summer12mb.tls");
 }
 
 CL_Surface
