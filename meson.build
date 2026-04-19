@@ -21,6 +21,7 @@ moc_files = qt5.preprocess(moc_headers : moc_headers)
 
 editor_sources = [
   'src/main.cpp',
+  'src/autotileset.cpp',
   'src/maploader.cpp',
   'src/mapview.cpp',
   'src/tlsloader.cpp',
@@ -39,7 +40,10 @@ executable('netpanzer-editor',
 )
 
 # ---------------------------------------------------------------------------
-# Install — Linux only (Windows packaging is handled by the Inno Setup installer)
+# Install
+
+install_data('data/autotile/summer12mb.autotile.json',
+  install_dir : get_option('datadir') / 'netpanzer-editor' / 'autotile')
 
 if host_machine.system() == 'linux'
   install_data('netpanzer-editor.desktop',

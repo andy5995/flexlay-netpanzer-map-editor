@@ -76,6 +76,7 @@ void MapView::fitToWindow()
 void MapView::setTool(Tool t)
 {
     m_tool = t;
+    emit toolChanged(t);
     commitStroke();
     m_draggingObj = false;
     m_selectedObj = -1;
@@ -258,14 +259,54 @@ void MapView::addToStroke(int tx, int ty)
     if (!m_currentStroke) return;
     const int idx = ty * m_map.width + tx;
     if (m_strokeTiles.contains(idx)) return;
+    m_strokeTiles.insert(idx);
+
     const uint16_t oldVal = m_map.tiles[size_t(idx)];
-    const uint16_t newVal = uint16_t(m_selectedTile);
+    uint16_t newVal = uint16_t(m_selectedTile);
+
+    const AutotileGroup* grp = nullptr;
+    if (m_autotileEnabled && m_autotileSet.isLoaded())
+        grp = m_autotileSet.groupForTile(m_selectedTile);
+
+    if (grp) {
+        const int bm = AutotileSet::computeBitmask(
+            m_map.tiles.data(), m_map.width, m_map.height, tx, ty, *grp);
+        const int variant = AutotileSet::tileForBitmask(*grp, bm);
+        newVal = uint16_t(variant >= 0 ? variant : m_selectedTile);
+    }
+
     if (oldVal == newVal) return;
+
     m_map.tiles[size_t(idx)] = newVal;
     m_currentStroke->edits.push_back({idx, oldVal, newVal});
-    m_strokeTiles.insert(idx);
+
+    if (grp)
+        updateAutotileNeighbors(tx, ty, *grp);
+
     update();
     emit mapModified();
+}
+
+void MapView::updateAutotileNeighbors(int tx, int ty, const AutotileGroup& grp)
+{
+    static const int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+    static const int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+    for (int d = 0; d < 8; ++d) {
+        const int nx = tx + dx[d];
+        const int ny = ty + dy[d];
+        if (nx < 0 || nx >= m_map.width || ny < 0 || ny >= m_map.height) continue;
+        const int nidx = ny * m_map.width + nx;
+        const uint16_t cur = m_map.tiles[size_t(nidx)];
+        if (!grp.member_tiles.contains(int(cur))) continue;
+        const int bm = AutotileSet::computeBitmask(
+            m_map.tiles.data(), m_map.width, m_map.height, nx, ny, grp);
+        const int variant = AutotileSet::tileForBitmask(grp, bm);
+        const uint16_t nv = uint16_t(variant >= 0 ? variant : cur);
+        if (nv == cur) continue;
+        m_map.tiles[size_t(nidx)] = nv;
+        if (m_currentStroke)
+            m_currentStroke->edits.push_back({nidx, cur, nv});
+    }
 }
 
 void MapView::commitStroke()
