@@ -23,18 +23,25 @@
 void
 RubyFunctor::print_error()
 {
-  // FIXME: Potential memory leak
   std::cerr << "######################################################" << std::endl;
-  std::cerr << "RubyException: ";
-  // Code below needs updating for ruby 3. -andy5995/2024-01-31
-            //<< rb_str2cstr(rb_inspect(ruby_errinfo), 0)
-            //<< std::endl;
-
-  //VALUE trace = rb_funcall(ruby_errinfo, rb_intern("backtrace"), 0);
-  //for (int i = 0; i < RARRAY(trace)->len; ++i)
-    //std::cout << rb_str2cstr(rb_ary_entry(trace, i), 0) << std::endl;
-  //std::cout << "######################################################" << std::endl;
-  //ruby_errinfo = Qnil;
+  VALUE errinfo = rb_errinfo();
+  if (errinfo != Qnil)
+    {
+      VALUE errmsg = rb_inspect(errinfo);
+      std::cerr << "RubyException: " << StringValueCStr(errmsg) << std::endl;
+      VALUE trace = rb_funcall(errinfo, rb_intern("backtrace"), 0);
+      if (trace != Qnil)
+        {
+          long len = RARRAY_LEN(trace);
+          for (long i = 0; i < len && i < 10; ++i)
+            {
+              VALUE entry = rb_ary_entry(trace, i);
+              std::cerr << "  " << StringValueCStr(entry) << std::endl;
+            }
+        }
+      rb_set_errinfo(Qnil);
+    }
+  std::cerr << "######################################################" << std::endl;
 }
 
 VALUE

@@ -520,6 +520,8 @@ NetPanzerFileStruct::NetPanzerFileStruct(Tileset tileset, const std::string& fil
   if (!file)
     {
       std::cout << "NetPanzerFileStructImpl: Error: " << filename << std::endl;
+      impl->tilemap = TilemapLayer(tileset, 0, 0);
+      return;
     }
 
   file.read(reinterpret_cast<char*>(&netp_id_header), sizeof(netp_id_header));

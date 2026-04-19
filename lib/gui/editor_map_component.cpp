@@ -149,6 +149,8 @@ EditorMapComponentImpl::mouse_down(const CL_InputEvent& event)
 void
 EditorMapComponentImpl::draw ()
 {
+  CL_Display::clear(CL_Color(0, 0, 0));
+
   if (workspace.get_map().is_null()) return;
 
   CL_Display::push_cliprect(parent->get_screen_rect());

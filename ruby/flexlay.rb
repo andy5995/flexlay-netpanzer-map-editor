@@ -253,7 +253,7 @@ class GenericDialog
   def on_cancel()
     @window.hide()
   end
-  
+
   def on_ok()
     @window.hide()
     if @callback
