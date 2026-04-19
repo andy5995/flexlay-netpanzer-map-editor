@@ -5,14 +5,14 @@ concurrency:
 
 on:
   push:
-    branches: main
+    branches: flexlay
     paths:
     - '**'
     - '!**.yml'
     - '!**.md'
     - '**/c-cpp.yml'
   pull_request:
-    branches: main
+    branches: flexlay
     paths:
     - '**'
     - '!**.yml'
@@ -77,11 +77,6 @@ jobs:
           libglu1-mesa-dev \
           libpng-dev \
           libjpeg-dev
-
-    - name: Build ClanLib
-      run: |
-        cd external/clanlib
-        scons
 
     - name: Build with scons
       run: |
