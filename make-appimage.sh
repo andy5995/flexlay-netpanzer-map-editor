@@ -97,9 +97,16 @@ linuxdeploy \
 
 OUT_APPIMAGE="netpanzer-editor-$VERSION-$ARCH.AppImage"
 
-REPO="flexlay-netpanzer-map-editor"
-TAG="latest"
 GITHUB_REPOSITORY_OWNER="${GITHUB_REPOSITORY_OWNER:-netpanzer}"
+REPO="${GITHUB_REPOSITORY:-flexlay-netpanzer-map-editor}"
+# Strip owner prefix if GITHUB_REPOSITORY is in "owner/repo" form
+REPO="${REPO##*/}"
+# Snapshot builds are published under the "snapshot" tag; tagged releases use the tag itself.
+if [[ "$VERSION" == "snapshot" || -z "$VERSION" ]]; then
+  TAG="snapshot"
+else
+  TAG="$VERSION"
+fi
 UPINFO="gh-releases-zsync|$GITHUB_REPOSITORY_OWNER|$REPO|$TAG|*$ARCH.AppImage.zsync"
 
 appimagetool \
