@@ -34,22 +34,29 @@ bool Tileset::load(const QString& path)
         palette[i] = qRgb(buf[base], buf[base + 1], buf[base + 2]);
     }
 
-    // The game renders tiles using an external netp.act palette, not the
-    // TLS-embedded one. Walk up from the TLS file's directory to find it.
+    // Override embedded palette: prefer <tileset>.act in same dir, then search
+    // upward for netp.act (which the game uses for the original summer12mb tileset).
     {
-        QDir dir = QFileInfo(path).absoluteDir();
-        for (int attempt = 0; attempt < 5; ++attempt) {
-            QFile actFile(dir.filePath("netp.act"));
-            if (actFile.open(QIODevice::ReadOnly)) {
-                const QByteArray actData = actFile.readAll();
-                if (actData.size() >= 768) {
-                    const auto* ab = reinterpret_cast<const unsigned char*>(actData.constData());
-                    for (int i = 0; i < 256; ++i)
-                        palette[i] = qRgb(ab[i*3], ab[i*3+1], ab[i*3+2]);
-                }
-                break;
+        const QFileInfo fi(path);
+        auto loadAct = [&](const QString& actPath) -> bool {
+            QFile actFile(actPath);
+            if (!actFile.open(QIODevice::ReadOnly)) return false;
+            const QByteArray actData = actFile.readAll();
+            if (actData.size() < 768) return false;
+            const auto* ab = reinterpret_cast<const unsigned char*>(actData.constData());
+            for (int i = 0; i < 256; ++i)
+                palette[i] = qRgb(ab[i*3], ab[i*3+1], ab[i*3+2]);
+            return true;
+        };
+
+        // 1. Same-stem .act beside the .tls file (custom palette for new tilesets)
+        if (!loadAct(fi.dir().filePath(fi.completeBaseName() + ".act"))) {
+            // 2. Walk up to find netp.act (original game palette)
+            QDir dir = fi.absoluteDir();
+            for (int attempt = 0; attempt < 5; ++attempt) {
+                if (loadAct(dir.filePath("netp.act"))) break;
+                if (!dir.cdUp()) break;
             }
-            if (!dir.cdUp()) break;
         }
     }
 
