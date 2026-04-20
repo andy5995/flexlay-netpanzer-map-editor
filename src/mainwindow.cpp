@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 #include "mapview.h"
-#include "tilepanel.h"
 #include "tilebrowser.h"
 #include "stamppanel.h"
 #include "minimap.h"
@@ -42,9 +41,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     m_view = new MapView(this);
     setCentralWidget(m_view);
 
-    m_tilePanel = new TilePanel(this);
-    addDockWidget(Qt::RightDockWidgetArea, m_tilePanel);
-
     m_tileBrowser = new TileBrowser(this);
     addDockWidget(Qt::LeftDockWidgetArea, m_tileBrowser);
     m_tileBrowser->hide();  // hidden by default, opened from View menu
@@ -60,16 +56,24 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     setupToolbar();
     setupStatusBar();
 
+    // Auto-load any .stamps.json files found in data/stamps/ next to the binary
+    const QString appDir = QCoreApplication::applicationDirPath();
+    QSet<QString> seenStampDirs;
+    for (const QString& candidate : {appDir + "/data/stamps", appDir + "/../data/stamps"}) {
+        const QString canon = QDir(candidate).canonicalPath();
+        if (canon.isEmpty() || seenStampDirs.contains(canon)) continue;
+        seenStampDirs.insert(canon);
+        m_stampPanel->loadFromDirectory(candidate);
+    }
+
     connect(m_view, &MapView::tileHovered,            this, &MainWindow::onTileHovered);
     connect(m_view, &MapView::mapModified,            this, &MainWindow::onMapModified);
     connect(m_view, &MapView::objectSelectionChanged, this, &MainWindow::onObjectSelectionChanged);
     connect(m_view, &MapView::objectActivated,        this, &MainWindow::onObjectActivated);
     connect(m_view, &MapView::viewportChanged,        this, &MainWindow::onViewportChanged);
 
-    connect(m_tilePanel,   &TilePanel::tileSelected,   m_view, &MapView::setSelectedTile);
     connect(m_tileBrowser, &TileBrowser::tileSelected, this, [this](int id) {
         m_view->setSelectedTile(id);
-        m_tilePanel->setSelectedTile(id);
         m_view->setTool(Tool::TilePaint);
     });
     connect(m_tileBrowser, &TileBrowser::stampCreated, this, [this](Stamp s) {
@@ -78,15 +82,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
         m_view->setTool(Tool::StampPaint);
         m_stampPanel->show();
     });
-    connect(m_tilePanel, &TilePanel::stampCreated, this, [this](Stamp s) {
-        m_stampPanel->addStamp(std::move(s));
-        m_view->setCurrentStamp(m_stampPanel->selectedStamp());
-        m_view->setTool(Tool::StampPaint);
-        m_stampPanel->show();
-    });
     connect(m_view, &MapView::tilePicked, this, [this](int id) {
         m_view->setSelectedTile(id);
-        m_tilePanel->setSelectedTile(id);
     });
     connect(m_view, &MapView::toolChanged, this, [this](Tool t) {
         for (QAction* a : m_toolGroup->actions()) {
@@ -185,6 +182,7 @@ void MainWindow::setupMenus()
         { "&Ellipse Paint",    "Ellipse",  Tool::EllipsePaint,    Qt::Key_E },
         { "Tile P&ick",        "Pick",     Tool::TilePick,        Qt::Key_I },
         { "&Rect Select",      "Rect Sel", Tool::RectSelect,      Qt::Key_R },
+        { "Rect &Fill",        "Fill",     Tool::RectFill,        Qt::Key_F },
         { "&Stamp Paint",      "Stamp",    Tool::StampPaint,      Qt::Key_M },
         { "Place &Outpost",    "Outpost",  Tool::PlaceOutpost,    Qt::Key_O },
         { "Place &Spawnpoint", "Spawn",    Tool::PlaceSpawnpoint, Qt::Key_S },
@@ -232,9 +230,6 @@ void MainWindow::setupMenus()
     connect(zoomOutAct, &QAction::triggered, this, &MainWindow::onZoomOut);
 
     view->addSeparator();
-    auto* tilePanelAct = m_tilePanel->toggleViewAction();
-    tilePanelAct->setText("&Tile Panel");
-    view->addAction(tilePanelAct);
     auto* tileBrowserAct = m_tileBrowser->toggleViewAction();
     tileBrowserAct->setText("Tile &Browser");
     view->addAction(tileBrowserAct);
@@ -367,14 +362,12 @@ void MainWindow::applyTileset()
 {
     if (m_tileset.isValid()) {
         m_view->setTileset(&m_tileset);
-        m_tilePanel->setTileset(&m_tileset);
         m_tileBrowser->setTileset(&m_tileset);
         m_stampPanel->setTileset(&m_tileset);
         m_minimap->setTileset(&m_tileset);
         m_minimap->rebuildImage();
     } else {
         m_view->setTileset(nullptr);
-        m_tilePanel->setTileset(nullptr);
         m_tileBrowser->setTileset(nullptr);
         m_stampPanel->setTileset(nullptr);
         m_minimap->setTileset(nullptr);
@@ -677,10 +670,8 @@ void MainWindow::onRedo()
 void MainWindow::onSetTool(Tool t)
 {
     m_view->setTool(t);
-    // Sync tile panel: only useful when painting
-    m_tilePanel->setVisible(t == Tool::TilePaint);
 
-    const char* names[] = {"Tile Paint", "Ellipse Paint", "Tile Pick", "Rect Select",
+    const char* names[] = {"Tile Paint", "Ellipse Paint", "Tile Pick", "Rect Select", "Rect Fill",
                             "Stamp Paint", "Place Outpost", "Place Spawnpoint", "Select Object"};
     statusBar()->showMessage(
         QString("Tool: %1").arg(names[int(t)]), 2000);

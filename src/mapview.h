@@ -19,6 +19,7 @@ enum class Tool {
     EllipsePaint,    // drag to paint selected tile along ellipse outline
     TilePick,        // left-click picks tile under cursor, switches to TilePaint
     RectSelect,      // drag to select a rectangular tile region
+    RectFill,        // drag to fill a rectangular tile region
     StampPaint,      // click to place the current stamp
     PlaceOutpost,    // left-click places an outpost
     PlaceSpawnpoint, // left-click places a spawn point
@@ -121,6 +122,11 @@ private:
     void commitStroke();
     void updateAutotileNeighbors(int tx, int ty, const AutotileGroup& grp);
 
+    // 4dir piece helpers
+    void addPieceToStroke(int px, int py, const AutotileGroup& grp);
+    void updatePieceNeighbors(int px, int py, const AutotileGroup& grp);
+    void applyPieceTiles(int px, int py, const AutotileGroup::Piece& piece);
+
     // Command stack (unified for tiles and objects)
     // pushCommand: command already applied to m_map (tile batches)
     void pushCommand(std::unique_ptr<Command> cmd);
@@ -150,6 +156,11 @@ private:
     QRect  m_selection;          // in tile coords, null if none
     bool   m_selecting  = false;
     QPoint m_selectStart;        // tile coord where drag began
+
+    // Rect fill state
+    bool   m_rectFilling  = false;
+    QPoint m_rectFillStart;
+    QRect  m_rectFillPreview;
 
     // Stamp paint state
     const Stamp* m_currentStamp    = nullptr;

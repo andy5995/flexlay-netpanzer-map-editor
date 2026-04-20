@@ -6,7 +6,6 @@
 #include "mapview.h"   // for Tool enum
 
 class MapView;
-class TilePanel;
 class TileBrowser;
 class StampPanel;
 class Minimap;
@@ -60,7 +59,6 @@ private:
     bool maybeSave();
 
     MapView*      m_view        = nullptr;
-    TilePanel*    m_tilePanel   = nullptr;
     TileBrowser*  m_tileBrowser = nullptr;
     StampPanel*   m_stampPanel  = nullptr;
     Minimap*      m_minimap     = nullptr;

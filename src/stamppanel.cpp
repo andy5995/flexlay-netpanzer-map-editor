@@ -5,6 +5,13 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QFile>
+#include <QDir>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 #include <algorithm>
 
 // ---------------------------------------------------------------------------
@@ -38,6 +45,16 @@ void StampWidget::clear()
     m_selected = -1;
     updateGeometry();
     update();
+}
+
+void StampWidget::setStamps(std::vector<Stamp> stamps)
+{
+    m_stamps   = std::move(stamps);
+    m_selected = m_stamps.empty() ? -1 : 0;
+    updateGeometry();
+    update();
+    if (m_selected >= 0)
+        emit stampSelected(&m_stamps[0]);
 }
 
 const Stamp* StampWidget::selectedStamp() const
@@ -77,9 +94,16 @@ void StampWidget::paintEvent(QPaintEvent*)
     QPainter p(this);
     p.fillRect(rect(), QColor(30, 30, 30));
 
-    if (!m_tileset || !m_tileset->isValid() || m_stamps.empty()) {
+    if (m_stamps.empty()) {
         p.setPen(Qt::gray);
         p.drawText(rect(), Qt::AlignCenter, "No stamps\ncaptured yet");
+        return;
+    }
+
+    if (!m_tileset || !m_tileset->isValid()) {
+        p.setPen(Qt::gray);
+        p.drawText(rect(), Qt::AlignCenter,
+                   QString("%1 stamp(s) loaded\n(open a map to preview)").arg(m_stamps.size()));
         return;
     }
 
@@ -160,6 +184,8 @@ StampPanel::StampPanel(QWidget* parent)
     , m_widget(new StampWidget())
     , m_scroll(new QScrollArea())
     , m_captureBtn(new QPushButton("Capture Selection"))
+    , m_saveBtn(new QPushButton("Save…"))
+    , m_loadBtn(new QPushButton("Load…"))
 {
     setAllowedAreas(Qt::AllDockWidgetAreas);
     setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable
@@ -168,12 +194,19 @@ StampPanel::StampPanel(QWidget* parent)
     m_scroll->setWidget(m_widget);
     m_scroll->setWidgetResizable(true);
     m_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    m_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+    auto* btnRow = new QHBoxLayout();
+    btnRow->setContentsMargins(0, 0, 0, 0);
+    btnRow->addWidget(m_saveBtn);
+    btnRow->addWidget(m_loadBtn);
 
     auto* container = new QWidget();
     auto* layout    = new QVBoxLayout(container);
     layout->setContentsMargins(4, 4, 4, 4);
     layout->setSpacing(4);
     layout->addWidget(m_captureBtn);
+    layout->addLayout(btnRow);
     layout->addWidget(m_scroll);
     setWidget(container);
 
@@ -181,6 +214,78 @@ StampPanel::StampPanel(QWidget* parent)
             this, &StampPanel::captureRequested);
     connect(m_widget, &StampWidget::stampSelected,
             this,     &StampPanel::stampSelected);
+    connect(m_saveBtn, &QPushButton::clicked, this, [this]() {
+        const Stamp* s = m_widget->selectedStamp();
+        if (!s) { QMessageBox::information(this, "No stamp selected", "Select a stamp first."); return; }
+        const QString defaultName = s->name.isEmpty() ? "stamp" : s->name;
+        QString path = QFileDialog::getSaveFileName(
+            this, "Save Stamp", defaultName, "Stamp files (*.stamp.json);;All files (*)");
+        if (path.isEmpty()) return;
+        if (!path.endsWith(".stamp.json", Qt::CaseInsensitive))
+            path += ".stamp.json";
+        if (!saveSelectedToFile(path))
+            QMessageBox::warning(this, "Save failed", "Could not write:\n" + path);
+    });
+    connect(m_loadBtn, &QPushButton::clicked, this, [this]() {
+        const QString path = QFileDialog::getOpenFileName(
+            this, "Load Stamps", {}, "Stamp files (*.stamp.json);;All files (*)");
+        if (!path.isEmpty() && !loadFromFile(path))
+            QMessageBox::warning(this, "Load failed", "Could not read:\n" + path);
+    });
+}
+
+bool StampPanel::saveSelectedToFile(const QString& path) const
+{
+    const Stamp* s = m_widget->selectedStamp();
+    if (!s) return false;
+    QJsonArray tiles;
+    for (uint16_t t : s->tiles)
+        tiles.append(int(t));
+    QJsonObject obj;
+    obj["name"]   = s->name;
+    obj["width"]  = s->width;
+    obj["height"] = s->height;
+    obj["tiles"]  = tiles;
+    QJsonObject root;
+    root["stamps"] = QJsonArray{obj};
+    QFile f(path);
+    if (!f.open(QIODevice::WriteOnly)) return false;
+    f.write(QJsonDocument(root).toJson());
+    return true;
+}
+
+bool StampPanel::loadFromFile(const QString& path)
+{
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly)) return false;
+    QJsonParseError err;
+    const QJsonDocument doc = QJsonDocument::fromJson(f.readAll(), &err);
+    if (doc.isNull() || !doc.isObject()) return false;
+
+    bool any = false;
+    for (const QJsonValue& v : doc.object().value("stamps").toArray()) {
+        const QJsonObject o = v.toObject();
+        Stamp s;
+        s.name   = o.value("name").toString();
+        s.width  = o.value("width").toInt();
+        s.height = o.value("height").toInt();
+        for (const QJsonValue& t : o.value("tiles").toArray())
+            s.tiles.push_back(uint16_t(t.toInt()));
+        if (s.width > 0 && s.height > 0 &&
+            int(s.tiles.size()) == s.width * s.height) {
+            m_widget->addStamp(std::move(s));
+            any = true;
+        }
+    }
+    return any;
+}
+
+void StampPanel::loadFromDirectory(const QString& dir)
+{
+    const QDir d(dir);
+    if (!d.exists()) return;
+    for (const QString& fn : d.entryList({"*.stamp.json"}, QDir::Files, QDir::Name))
+        loadFromFile(d.filePath(fn));
 }
 
 void StampPanel::addStamp(Stamp s)

@@ -18,6 +18,8 @@ public:
     void clear();
 
     const Stamp* selectedStamp() const;
+    const std::vector<Stamp>& stamps() const { return m_stamps; }
+    void setStamps(std::vector<Stamp> stamps);
 
 signals:
     void stampSelected(const Stamp* stamp);
@@ -49,6 +51,10 @@ public:
     void setTileset(const Tileset* ts);
     const Stamp* selectedStamp() const;
 
+    bool saveSelectedToFile(const QString& path) const;
+    bool loadFromFile(const QString& path);
+    void loadFromDirectory(const QString& dir);
+
 signals:
     void stampSelected(const Stamp* stamp);
     void captureRequested();
@@ -57,4 +63,6 @@ private:
     StampWidget*  m_widget;
     QScrollArea*  m_scroll;
     QPushButton*  m_captureBtn;
+    QPushButton*  m_saveBtn;
+    QPushButton*  m_loadBtn;
 };

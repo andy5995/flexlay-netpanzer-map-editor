@@ -87,7 +87,8 @@ void MapView::setTool(Tool t)
     switch (t) {
     case Tool::TilePick:        setCursor(Qt::PointingHandCursor); break;
     case Tool::EllipsePaint:
-    case Tool::RectSelect:      setCursor(Qt::CrossCursor); break;
+    case Tool::RectSelect:
+    case Tool::RectFill:        setCursor(Qt::CrossCursor); break;
     case Tool::StampPaint:      setCursor(Qt::CrossCursor); break;
     case Tool::SelectObject:    setCursor(Qt::ArrowCursor); break;
     case Tool::PlaceOutpost:
@@ -257,16 +258,30 @@ void MapView::startStroke()
 void MapView::addToStroke(int tx, int ty)
 {
     if (!m_currentStroke) return;
+
+    const AutotileGroup* grp = nullptr;
+    if (m_autotileEnabled && m_autotileSet.isLoaded())
+        grp = m_autotileSet.groupForTile(m_selectedTile);
+
+    // 4dir piece mode: resolve to piece top-left, then paint the whole piece.
+    if (grp && grp->is4dir && grp->piece_size > 1) {
+        auto offIt = grp->tile_to_offset.constFind(m_selectedTile);
+        if (offIt == grp->tile_to_offset.constEnd()) return;
+        const int px = tx - offIt->first;
+        const int py = ty - offIt->second;
+        const int pidx = py * m_map.width + px;
+        if (m_strokeTiles.contains(pidx)) return;
+        addPieceToStroke(px, py, *grp);
+        return;
+    }
+
+    // blob8 / single-tile mode
     const int idx = ty * m_map.width + tx;
     if (m_strokeTiles.contains(idx)) return;
     m_strokeTiles.insert(idx);
 
     const uint16_t oldVal = m_map.tiles[size_t(idx)];
     uint16_t newVal = uint16_t(m_selectedTile);
-
-    const AutotileGroup* grp = nullptr;
-    if (m_autotileEnabled && m_autotileSet.isLoaded())
-        grp = m_autotileSet.groupForTile(m_selectedTile);
 
     if (grp) {
         const int bm = AutotileSet::computeBitmask(
@@ -285,6 +300,91 @@ void MapView::addToStroke(int tx, int ty)
 
     update();
     emit mapModified();
+}
+
+void MapView::addPieceToStroke(int px, int py, const AutotileGroup& grp)
+{
+    const int pidx = py * m_map.width + px;
+    m_strokeTiles.insert(pidx);
+
+    // Determine intent: the piece type of the currently selected tile.
+    const int intentBm = [&] {
+        auto it = grp.tile_to_piece_bitmask.constFind(m_selectedTile);
+        return (it != grp.tile_to_piece_bitmask.constEnd()) ? it.value() : 15;
+    }();
+
+    const int bm = AutotileSet::computePieceBitmask(
+        m_map.tiles.data(), m_map.width, m_map.height, px, py, grp.piece_size, grp);
+    const AutotileGroup::Piece* piece = AutotileSet::pieceForBitmask(grp, bm, intentBm);
+    if (!piece || piece->tiles.empty()) return;
+
+    applyPieceTiles(px, py, *piece);
+    updatePieceNeighbors(px, py, grp);
+    update();
+    emit mapModified();
+}
+
+void MapView::applyPieceTiles(int px, int py, const AutotileGroup::Piece& piece)
+{
+    for (int r = 0; r < piece.h; ++r) {
+        for (int c = 0; c < piece.w; ++c) {
+            const int tid = piece.tiles[size_t(r * piece.w + c)];
+            if (tid < 0) continue;
+            const int ntx = px + c;
+            const int nty = py + r;
+            if (ntx < 0 || ntx >= m_map.width || nty < 0 || nty >= m_map.height) continue;
+            const int nidx = nty * m_map.width + ntx;
+            const uint16_t oldVal = m_map.tiles[size_t(nidx)];
+            const uint16_t newVal = uint16_t(tid);
+            if (oldVal == newVal) continue;
+            m_map.tiles[size_t(nidx)] = newVal;
+            if (m_currentStroke)
+                m_currentStroke->edits.push_back({nidx, oldVal, newVal});
+        }
+    }
+}
+
+void MapView::updatePieceNeighbors(int px, int py, const AutotileGroup& grp)
+{
+    const int ps = grp.piece_size;
+    // Cardinal offsets to the 4 adjacent piece positions.
+    const int noff[4][2] = {{0,-ps}, {ps,0}, {0,ps}, {-ps,0}};
+
+    QSet<int> visited;
+    for (auto& off : noff) {
+        const int cx = px + off[0];
+        const int cy = py + off[1];
+        // Search the expected piece area for any member tile, then trace to top-left.
+        for (int r = 0; r < ps; ++r) {
+            for (int c = 0; c < ps; ++c) {
+                const int nx = cx + c;
+                const int ny = cy + r;
+                if (nx < 0 || nx >= m_map.width || ny < 0 || ny >= m_map.height) continue;
+                const int tid = int(m_map.tiles[size_t(ny * m_map.width + nx)]);
+                if (!grp.member_tiles.contains(tid)) continue;
+                auto offIt = grp.tile_to_offset.constFind(tid);
+                if (offIt == grp.tile_to_offset.constEnd()) goto next_dir;
+                {
+                    const int npx   = nx - offIt->first;
+                    const int npy   = ny - offIt->second;
+                    const int npidx = npy * m_map.width + npx;
+                    if (visited.contains(npidx)) goto next_dir;
+                    visited.insert(npidx);
+                    const int nbm = AutotileSet::computePieceBitmask(
+                        m_map.tiles.data(), m_map.width, m_map.height,
+                        npx, npy, ps, grp);
+                    // Use the neighbor's current piece type as intent.
+                    auto nIntentIt = grp.tile_to_piece_bitmask.constFind(tid);
+                    const int nIntentBm = (nIntentIt != grp.tile_to_piece_bitmask.constEnd())
+                                          ? nIntentIt.value() : 15;
+                    const AutotileGroup::Piece* np = AutotileSet::pieceForBitmask(grp, nbm, nIntentBm);
+                    if (np) applyPieceTiles(npx, npy, *np);
+                }
+                goto next_dir;
+            }
+        }
+        next_dir:;
+    }
 }
 
 void MapView::updateAutotileNeighbors(int tx, int ty, const AutotileGroup& grp)
@@ -313,6 +413,7 @@ void MapView::commitStroke()
 {
     if (m_currentStroke && !m_currentStroke->empty()) {
         pushCommand(std::move(m_currentStroke));
+        emit mapModified();
     }
     m_currentStroke.reset();
     m_strokeTiles.clear();
@@ -424,6 +525,20 @@ void MapView::paintEvent(QPaintEvent*)
             }
         }
         p.setOpacity(1.0);
+    }
+
+    // Rect fill preview
+    if (m_rectFilling && !m_rectFillPreview.isNull()) {
+        const QRectF fr(m_rectFillPreview.x() * TILE_SIZE,
+                        m_rectFillPreview.y() * TILE_SIZE,
+                        m_rectFillPreview.width()  * TILE_SIZE,
+                        m_rectFillPreview.height() * TILE_SIZE);
+        p.setOpacity(0.35);
+        p.fillRect(fr, QColor(0, 180, 255));
+        p.setOpacity(1.0);
+        p.setPen(QPen(QColor(0, 180, 255), 1));
+        p.setBrush(Qt::NoBrush);
+        p.drawRect(fr);
     }
 
     // Selection highlight
@@ -599,6 +714,16 @@ void MapView::mousePressEvent(QMouseEvent* ev)
         }
         break;
     }
+    case Tool::RectFill: {
+        int tx, ty;
+        if (widgetToTile(ev->pos(), tx, ty)) {
+            m_rectFilling     = true;
+            m_rectFillStart   = QPoint(tx, ty);
+            m_rectFillPreview = QRect(tx, ty, 1, 1);
+            update();
+        }
+        break;
+    }
     case Tool::StampPaint: {
         int tx, ty;
         if (widgetToTile(ev->pos(), tx, ty))
@@ -689,6 +814,18 @@ void MapView::mouseMoveEvent(QMouseEvent* ev)
             const int y1 = std::max(m_selectStart.y(), ty);
             m_selection = QRect(x0, y0, x1 - x0 + 1, y1 - y0 + 1);
             emit selectionChanged(m_selection);
+            update();
+        }
+    }
+
+    if (m_tool == Tool::RectFill && m_rectFilling && (ev->buttons() & Qt::LeftButton)) {
+        int tx, ty;
+        if (widgetToTile(ev->pos(), tx, ty)) {
+            const int x0 = std::min(m_rectFillStart.x(), tx);
+            const int y0 = std::min(m_rectFillStart.y(), ty);
+            const int x1 = std::max(m_rectFillStart.x(), tx);
+            const int y1 = std::max(m_rectFillStart.y(), ty);
+            m_rectFillPreview = QRect(x0, y0, x1 - x0 + 1, y1 - y0 + 1);
             update();
         }
     }
@@ -784,6 +921,21 @@ void MapView::mouseReleaseEvent(QMouseEvent* ev)
         if (m_tool == Tool::RectSelect && m_selecting) {
             m_selecting = false;
             // selection already updated in mouseMoveEvent
+        }
+
+        if (m_tool == Tool::RectFill && m_rectFilling) {
+            m_rectFilling = false;
+            const QRect r = m_rectFillPreview.intersected(
+                QRect(0, 0, m_map.width, m_map.height));
+            if (r.isValid() && m_map.isValid()) {
+                startStroke();
+                for (int y = r.top(); y <= r.bottom(); ++y)
+                    for (int x = r.left(); x <= r.right(); ++x)
+                        addToStroke(x, y);
+                commitStroke();
+            }
+            m_rectFillPreview = QRect();
+            update();
         }
 
         if (m_tool == Tool::SelectObject && m_draggingObj && m_selectedObj >= 0) {
