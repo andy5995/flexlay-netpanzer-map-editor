@@ -13,7 +13,8 @@ Features
 - Tile pick tool — click any map tile to select it for painting
 - Autotile — automatic transition-tile selection based on 8-neighbour bitmask;
   enabled when a .autotile.json sidecar is found alongside the tileset
-  (summer12mb grass group included; see docs/autotile-format.md)
+  (see docs/autotile-format.md)
+- Bundled generated tileset (no game data required); see docs/generated-tileset.md
 - Tile browser with jump-to-ID search
 - Place and move outpost and spawn-point objects
 - Object renaming via double-click or context menu
