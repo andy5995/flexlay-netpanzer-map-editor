@@ -120,8 +120,25 @@ int AutotileSet::computeBitmask(const uint16_t* tiles, int mapW, int mapH,
 
 int AutotileSet::tileForBitmask(const AutotileGroup& grp, int bitmask)
 {
+    // Exact match
     auto it = grp.bitmask_to_tile.constFind(bitmask);
     if (it != grp.bitmask_to_tile.constEnd()) return it.value();
+
+    // Add any implied diagonal bits (blob-8: diagonal only counts when both
+    // adjacent cardinals are set). This recovers corner cases like E+S (20)
+    // that are absent from sparse tables but have an entry at E+S+SE (28).
+    const bool n = bitmask & 1, e = bitmask & 4, s = bitmask & 16, w = bitmask & 64;
+    const int implied = bitmask
+        | (n && e ?   2 : 0)   // NE
+        | (s && e ?   8 : 0)   // SE
+        | (s && w ?  32 : 0)   // SW
+        | (n && w ? 128 : 0);  // NW
+    if (implied != bitmask) {
+        it = grp.bitmask_to_tile.constFind(implied);
+        if (it != grp.bitmask_to_tile.constEnd()) return it.value();
+    }
+
+    // Fall back to fully-surrounded tile
     it = grp.bitmask_to_tile.constFind(255);
     if (it != grp.bitmask_to_tile.constEnd()) return it.value();
     return -1;
