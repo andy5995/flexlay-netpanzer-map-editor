@@ -83,14 +83,12 @@ void MapView::setTool(Tool t)
     m_outpostHoverTile = QPoint(-1, -1);
     m_ellipseActive     = false;
     m_rectOutlineActive = false;
-    m_trapActive        = false;
     emit objectSelectionChanged(-1);
 
     switch (t) {
     case Tool::TilePick:        setCursor(Qt::PointingHandCursor); break;
     case Tool::EllipsePaint:
     case Tool::RectOutline:
-    case Tool::TrapezoidPaint:
     case Tool::RectSelect:
     case Tool::RectFill:        setCursor(Qt::CrossCursor); break;
     case Tool::StampPaint:      setCursor(Qt::CrossCursor); break;
@@ -485,70 +483,6 @@ std::vector<QPoint> MapView::computeRectOutlineTiles(QPoint a, QPoint b, int map
     return result;
 }
 
-// Trapezoid outline: bottom edge full width, top edge narrower by `inset` on each side,
-// with diagonal sides sloping inward — matching the isometric compound wall style.
-std::vector<QPoint> MapView::computeTrapezoidTiles(QPoint a, QPoint b, int mapW, int mapH)
-{
-    const int x0    = std::min(a.x(), b.x());
-    const int y0    = std::min(a.y(), b.y());
-    const int x1    = std::max(a.x(), b.x());
-    const int y1    = std::max(a.y(), b.y());
-    const int inset = (y1 - y0) / 4;   // each side slopes inward (shallow, ~1:4 ratio)
-
-    // Bottom: (x0,y1)..(x1,y1)   Top: (x0+inset,y0)..(x1-inset,y0)
-    const int tx0 = x0 + inset;
-    const int tx1 = std::max(tx0, x1 - inset);
-
-    std::vector<bool>   visited(size_t(mapW * mapH), false);
-    std::vector<QPoint> result;
-
-    auto add = [&](int x, int y) {
-        x = std::clamp(x, 0, mapW - 1);
-        y = std::clamp(y, 0, mapH - 1);
-        const size_t idx = size_t(y * mapW + x);
-        if (!visited[idx]) { visited[idx] = true; result.push_back(QPoint(x, y)); }
-    };
-
-    // Ordinary Bresenham for horizontal/vertical edges.
-    auto line = [&](int ax, int ay, int bx, int by) {
-        int dx = std::abs(bx - ax), sx = ax < bx ? 1 : -1;
-        int dy = -std::abs(by - ay), sy = ay < by ? 1 : -1;
-        int err = dx + dy;
-        while (true) {
-            add(ax, ay);
-            if (ax == bx && ay == by) break;
-            const int e2 = 2 * err;
-            if (e2 >= dy) { err += dy; ax += sx; }
-            if (e2 <= dx) { err += dx; ay += sy; }
-        }
-    };
-
-    // Staircase line for diagonal sides: every diagonal Bresenham step also
-    // places the horizontal intermediate tile so adjacent tiles share a neighbour
-    // and autotile produces connected wall segments rather than isolated end-caps.
-    auto stairLine = [&](int ax, int ay, int bx, int by) {
-        int dx = std::abs(bx - ax), sx = ax < bx ? 1 : -1;
-        int dy = -std::abs(by - ay), sy = ay < by ? 1 : -1;
-        int err = dx + dy;
-        while (true) {
-            add(ax, ay);
-            if (ax == bx && ay == by) break;
-            const int e2 = 2 * err;
-            const bool stepX = e2 >= dy;
-            const bool stepY = e2 <= dx;
-            if (stepX) { err += dy; ax += sx; }
-            if (stepY) { err += dx; ay += sy; }
-            if (stepX && stepY) add(ax - sx, ay); // fill the L corner
-        }
-    };
-
-    line(x0,  y1, x1,  y1);       // bottom edge (wide)
-    line(tx0, y0, tx1, y0);       // top edge (narrow)
-    stairLine(x0, y1, tx0, y0);   // left side
-    stairLine(x1, y1, tx1, y0);   // right side
-    return result;
-}
-
 // ---------------------------------------------------------------------------
 // Paint event
 
@@ -693,18 +627,6 @@ void MapView::paintEvent(QPaintEvent*)
         p.setOpacity(1.0);
     }
 
-    // Trapezoid (parallelogram) paint preview
-    if (m_tool == Tool::TrapezoidPaint && m_trapActive) {
-        const auto tiles = computeTrapezoidTiles(m_trapStart, m_trapEnd,
-                                                 m_map.width, m_map.height);
-        p.setOpacity(0.55);
-        p.setPen(Qt::NoPen);
-        for (const QPoint& pt : tiles)
-            p.fillRect(QRectF(pt.x() * TILE_SIZE, pt.y() * TILE_SIZE,
-                              TILE_SIZE, TILE_SIZE), QColor(255, 220, 0, 180));
-        p.setOpacity(1.0);
-    }
-
     // Rect outline paint preview
     if (m_tool == Tool::RectOutline && m_rectOutlineActive) {
         const auto tiles = computeRectOutlineTiles(m_rectOutlineStart, m_rectOutlineEnd,
@@ -810,16 +732,6 @@ void MapView::mousePressEvent(QMouseEvent* ev)
             m_rectOutlineStart  = QPoint(tx, ty);
             m_rectOutlineEnd    = QPoint(tx, ty);
             m_rectOutlineActive = true;
-            update();
-        }
-        break;
-    }
-    case Tool::TrapezoidPaint: {
-        int tx, ty;
-        if (widgetToTile(ev->pos(), tx, ty)) {
-            m_trapStart  = QPoint(tx, ty);
-            m_trapEnd    = QPoint(tx, ty);
-            m_trapActive = true;
             update();
         }
         break;
@@ -983,17 +895,6 @@ void MapView::mouseMoveEvent(QMouseEvent* ev)
         }
     }
 
-    if (m_tool == Tool::TrapezoidPaint && m_trapActive && (ev->buttons() & Qt::LeftButton)) {
-        int tx, ty;
-        if (widgetToTile(ev->pos(), tx, ty)) {
-            const QPoint newEnd(tx, ty);
-            if (newEnd != m_trapEnd) {
-                m_trapEnd = newEnd;
-                update();
-            }
-        }
-    }
-
     if (m_tool == Tool::PlaceOutpost) {
         int tx, ty;
         const QPoint newHover = widgetToTile(ev->pos(), tx, ty)
@@ -1062,17 +963,6 @@ void MapView::mouseReleaseEvent(QMouseEvent* ev)
             m_rectOutlineActive = false;
             const auto tiles = computeRectOutlineTiles(m_rectOutlineStart, m_rectOutlineEnd,
                                                        m_map.width, m_map.height);
-            startStroke();
-            for (const QPoint& pt : tiles)
-                addToStroke(pt.x(), pt.y());
-            commitStroke();
-            update();
-        }
-
-        if (m_tool == Tool::TrapezoidPaint && m_trapActive) {
-            m_trapActive = false;
-            const auto tiles = computeTrapezoidTiles(m_trapStart, m_trapEnd,
-                                                     m_map.width, m_map.height);
             startStroke();
             for (const QPoint& pt : tiles)
                 addToStroke(pt.x(), pt.y());

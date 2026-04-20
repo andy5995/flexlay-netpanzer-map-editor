@@ -18,7 +18,6 @@ enum class Tool {
     TilePaint,       // left-drag paints selected tile
     EllipsePaint,    // drag to paint selected tile along ellipse outline
     RectOutline,     // drag to paint selected tile along rectangle outline
-    TrapezoidPaint,  // drag to paint selected tile along a parallelogram outline (isometric walls)
     TilePick,        // left-click picks tile under cursor, switches to TilePaint
     RectSelect,      // drag to select a rectangular tile region
     RectFill,        // drag to fill a rectangular tile region
@@ -182,14 +181,8 @@ private:
     QPoint m_rectOutlineEnd;
     bool   m_rectOutlineActive = false;
 
-    // Trapezoid (parallelogram) paint state
-    QPoint m_trapStart;
-    QPoint m_trapEnd;
-    bool   m_trapActive = false;
-
     static std::vector<QPoint> computeEllipseTiles(QPoint a, QPoint b, int mapW, int mapH);
     static std::vector<QPoint> computeRectOutlineTiles(QPoint a, QPoint b, int mapW, int mapH);
-    static std::vector<QPoint> computeTrapezoidTiles(QPoint a, QPoint b, int mapW, int mapH);
 
     // Pan state (middle button)
     bool   m_panning   = false;
