@@ -121,76 +121,92 @@ def build_palette():
 
 TILE_W = 32
 TILE_H = 32
+BORDER = 8  # transition zone width in pixels
 
-rng = random.Random(42)
+# What terrain colour appears at each terrain's exposed edges.
+# None = grass (background); darken instead of blending.
+TERRAIN_NEIGHBOR = {
+    'grass':    None,
+    'mountain': 'grass',
+    'water':    'sand',
+    'sand':     'grass',
+    'road':     'grass',
+}
 
 def terrain_palette_base(ti):
-    """Middle shade index for terrain ti (index 3 of 8 shades = bright-ish)."""
     return ti * 8 + 4
 
 def noise_idx(ti, strength):
-    """Return a palette index for a noise pixel given terrain and strength 0-2."""
     return 48 + ti * 3 + min(2, strength)
 
 def pixel_for(terrain_idx, nx, ny):
     """Return palette index for a pixel at (nx,ny) in [0,1] with noise grain."""
-    base = terrain_palette_base(terrain_idx)
-    # Simple hash noise
     h = int(abs(math.sin(nx * 127.1 + ny * 311.7) * 43758.5453)) % 16
     if h < 3:
         return noise_idx(terrain_idx, h % 3)
-    shade_offset = (h % 8) - 4  # -4..3
+    shade_offset = (h % 8) - 4
     idx = terrain_palette_base(terrain_idx) + shade_offset
-    idx = max(terrain_idx * 8, min(terrain_idx * 8 + 7, idx))
-    return idx
+    return max(terrain_idx * 8, min(terrain_idx * 8 + 7, idx))
 
-def make_tile_pixels(terrain_idx, bitmask):
+def dither_threshold(px, py):
+    """Deterministic per-pixel threshold in [0,1) for ordered dithering."""
+    h = abs(math.sin(px * 73.856 + py * 151.345 + 0.5) * 43758.5453)
+    return (int(h) % 100) / 100.0
+
+def edge_dist(px, py, n, e, s, w, ne, se, sw, nw):
+    """Distance to the nearest exposed edge/corner (Chebyshev for corners)."""
+    INF = BORDER + 1
+    d = INF
+    if not n:  d = min(d, py)
+    if not s:  d = min(d, TILE_H - 1 - py)
+    if not e:  d = min(d, TILE_W - 1 - px)
+    if not w:  d = min(d, px)
+    # Missing diagonal with both cardinals present → exposed corner
+    if n and e and not ne: d = min(d, max(TILE_W - 1 - px, py))
+    if s and e and not se: d = min(d, max(TILE_W - 1 - px, TILE_H - 1 - py))
+    if s and w and not sw: d = min(d, max(px, TILE_H - 1 - py))
+    if n and w and not nw: d = min(d, max(px, py))
+    return d
+
+def make_tile_pixels(terrain_idx, bitmask, neighbor_idx):
     """
     Generate 32×32 raw palette-indexed pixels for a terrain+bitmask combo.
-
-    The tile shows the terrain fill; edges that face a 'missing' neighbour
-    get a subtle darkened border to hint at the transition.
+    Exposed edges dither-blend toward neighbor_idx terrain (or darken if None).
     """
     pixels = bytearray(TILE_W * TILE_H)
 
-    n  = bool(bitmask & 1)
-    e  = bool(bitmask & 4)
-    s  = bool(bitmask & 16)
-    w  = bool(bitmask & 64)
-    ne = bool(bitmask & 2)
-    se = bool(bitmask & 8)
-    sw = bool(bitmask & 32)
-    nw = bool(bitmask & 128)
-
-    BORDER = 4  # px border width for edge hint
+    n  = bool(bitmask & 1);  e  = bool(bitmask & 4)
+    s  = bool(bitmask & 16); w  = bool(bitmask & 64)
+    ne = bool(bitmask & 2);  se = bool(bitmask & 8)
+    sw = bool(bitmask & 32); nw = bool(bitmask & 128)
 
     for py in range(TILE_H):
         for px in range(TILE_W):
-            nx = px / (TILE_W - 1)
-            ny = py / (TILE_H - 1)
+            fnx = px / (TILE_W - 1)
+            fny = py / (TILE_H - 1)
 
-            # Check if this pixel is in an exposed edge zone
-            on_n = py < BORDER
-            on_s = py >= TILE_H - BORDER
-            on_e = px >= TILE_W - BORDER
-            on_w = px < BORDER
+            dist = edge_dist(px, py, n, e, s, w, ne, se, sw, nw)
 
-            # Darken edge pixels that face a non-member neighbour
-            edge_dark = False
-            if on_n and not n: edge_dark = True
-            if on_s and not s: edge_dark = True
-            if on_e and not e: edge_dark = True
-            if on_w and not w: edge_dark = True
-            # Corner pixels: darken if either diagonal or both cardinals missing
-            if on_n and on_e and not ne: edge_dark = True
-            if on_s and on_e and not se: edge_dark = True
-            if on_s and on_w and not sw: edge_dark = True
-            if on_n and on_w and not nw: edge_dark = True
-
-            if edge_dark:
-                idx = terrain_idx * 8 + 0  # darkest shade
+            if dist < BORDER:
+                t = dist / BORDER  # 0.0 at edge → 1.0 at interior
+                if neighbor_idx is not None:
+                    # Dither between neighbor and current terrain
+                    if t < dither_threshold(px, py):
+                        idx = pixel_for(neighbor_idx,
+                                        fnx + neighbor_idx * 0.13,
+                                        fny + neighbor_idx * 0.07)
+                    else:
+                        idx = pixel_for(terrain_idx,
+                                        fnx + terrain_idx * 0.13,
+                                        fny + terrain_idx * 0.07)
+                else:
+                    # Background terrain (grass): shade darkens toward edge
+                    shade = int(t * 4)  # 0..3
+                    idx = terrain_idx * 8 + shade
             else:
-                idx = pixel_for(terrain_idx, nx + terrain_idx * 0.13, ny + terrain_idx * 0.07)
+                idx = pixel_for(terrain_idx,
+                                fnx + terrain_idx * 0.13,
+                                fny + terrain_idx * 0.07)
 
             pixels[py * TILE_W + px] = idx
 
@@ -298,8 +314,10 @@ def main():
     all_pixels = []
     for name in TERRAIN_ORDER:
         ti = TERRAIN_ORDER.index(name)
+        nb_name = TERRAIN_NEIGHBOR[name]
+        nb_idx  = TERRAIN_ORDER.index(nb_name) if nb_name else None
         for bm in BITMASKS:
-            all_pixels.append(make_tile_pixels(ti, bm))
+            all_pixels.append(make_tile_pixels(ti, bm, nb_idx))
         print(f"  {name}: {len(BITMASKS)} tiles")
 
     # Mirror the summer12mb layout: wads/generated/Default/generated.tls
