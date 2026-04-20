@@ -81,12 +81,14 @@ void MapView::setTool(Tool t)
     m_draggingObj = false;
     m_selectedObj = -1;
     m_outpostHoverTile = QPoint(-1, -1);
-    m_ellipseActive = false;
+    m_ellipseActive     = false;
+    m_rectOutlineActive = false;
     emit objectSelectionChanged(-1);
 
     switch (t) {
     case Tool::TilePick:        setCursor(Qt::PointingHandCursor); break;
     case Tool::EllipsePaint:
+    case Tool::RectOutline:
     case Tool::RectSelect:
     case Tool::RectFill:        setCursor(Qt::CrossCursor); break;
     case Tool::StampPaint:      setCursor(Qt::CrossCursor); break;
@@ -462,6 +464,25 @@ std::vector<QPoint> MapView::computeEllipseTiles(QPoint a, QPoint b, int mapW, i
     return result;
 }
 
+// Rectangle outline tile set
+std::vector<QPoint> MapView::computeRectOutlineTiles(QPoint a, QPoint b, int mapW, int mapH)
+{
+    const int x0 = std::clamp(std::min(a.x(), b.x()), 0, mapW - 1);
+    const int y0 = std::clamp(std::min(a.y(), b.y()), 0, mapH - 1);
+    const int x1 = std::clamp(std::max(a.x(), b.x()), 0, mapW - 1);
+    const int y1 = std::clamp(std::max(a.y(), b.y()), 0, mapH - 1);
+
+    std::vector<bool>   visited(size_t(mapW * mapH), false);
+    std::vector<QPoint> result;
+    auto add = [&](int x, int y) {
+        const size_t idx = size_t(y * mapW + x);
+        if (!visited[idx]) { visited[idx] = true; result.push_back(QPoint(x, y)); }
+    };
+    for (int x = x0; x <= x1; ++x) { add(x, y0); add(x, y1); }
+    for (int y = y0 + 1; y < y1;  ++y) { add(x0, y); add(x1, y); }
+    return result;
+}
+
 // ---------------------------------------------------------------------------
 // Paint event
 
@@ -606,6 +627,18 @@ void MapView::paintEvent(QPaintEvent*)
         p.setOpacity(1.0);
     }
 
+    // Rect outline paint preview
+    if (m_tool == Tool::RectOutline && m_rectOutlineActive) {
+        const auto tiles = computeRectOutlineTiles(m_rectOutlineStart, m_rectOutlineEnd,
+                                                   m_map.width, m_map.height);
+        p.setOpacity(0.55);
+        p.setPen(Qt::NoPen);
+        for (const QPoint& pt : tiles)
+            p.fillRect(QRectF(pt.x() * TILE_SIZE, pt.y() * TILE_SIZE,
+                              TILE_SIZE, TILE_SIZE), QColor(255, 220, 0, 180));
+        p.setOpacity(1.0);
+    }
+
     // Outpost capture-pad overlay.
     // The game places the pad at marker_center + (224, 48) px with a
     // ±48 x ±32 px capture box (Objective.cpp, occupation_pad_offset).
@@ -689,6 +722,16 @@ void MapView::mousePressEvent(QMouseEvent* ev)
             m_ellipseStart  = QPoint(tx, ty);
             m_ellipseEnd    = QPoint(tx, ty);
             m_ellipseActive = true;
+            update();
+        }
+        break;
+    }
+    case Tool::RectOutline: {
+        int tx, ty;
+        if (widgetToTile(ev->pos(), tx, ty)) {
+            m_rectOutlineStart  = QPoint(tx, ty);
+            m_rectOutlineEnd    = QPoint(tx, ty);
+            m_rectOutlineActive = true;
             update();
         }
         break;
@@ -841,6 +884,17 @@ void MapView::mouseMoveEvent(QMouseEvent* ev)
         }
     }
 
+    if (m_tool == Tool::RectOutline && m_rectOutlineActive && (ev->buttons() & Qt::LeftButton)) {
+        int tx, ty;
+        if (widgetToTile(ev->pos(), tx, ty)) {
+            const QPoint newEnd(tx, ty);
+            if (newEnd != m_rectOutlineEnd) {
+                m_rectOutlineEnd = newEnd;
+                update();
+            }
+        }
+    }
+
     if (m_tool == Tool::PlaceOutpost) {
         int tx, ty;
         const QPoint newHover = widgetToTile(ev->pos(), tx, ty)
@@ -898,20 +952,21 @@ void MapView::mouseReleaseEvent(QMouseEvent* ev)
             m_ellipseActive = false;
             const auto tiles = computeEllipseTiles(m_ellipseStart, m_ellipseEnd,
                                                    m_map.width, m_map.height);
-            auto batch = std::make_unique<TileBatch>();
-            for (const QPoint& pt : tiles) {
-                const int idx     = pt.y() * m_map.width + pt.x();
-                const uint16_t ov = m_map.tiles[size_t(idx)];
-                const uint16_t nv = uint16_t(m_selectedTile);
-                if (ov != nv) {
-                    m_map.tiles[size_t(idx)] = nv;
-                    batch->edits.push_back({idx, ov, nv});
-                }
-            }
-            if (!batch->empty()) {
-                pushCommand(std::move(batch));
-                emit mapModified();
-            }
+            startStroke();
+            for (const QPoint& pt : tiles)
+                addToStroke(pt.x(), pt.y());
+            commitStroke();
+            update();
+        }
+
+        if (m_tool == Tool::RectOutline && m_rectOutlineActive) {
+            m_rectOutlineActive = false;
+            const auto tiles = computeRectOutlineTiles(m_rectOutlineStart, m_rectOutlineEnd,
+                                                       m_map.width, m_map.height);
+            startStroke();
+            for (const QPoint& pt : tiles)
+                addToStroke(pt.x(), pt.y());
+            commitStroke();
             update();
         }
 

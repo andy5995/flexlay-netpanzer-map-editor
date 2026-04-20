@@ -182,6 +182,7 @@ void MainWindow::setupMenus()
     const ToolDef defs[] = {
         { "Tile &Paint",       "Paint",    Tool::TilePaint,       Qt::Key_T },
         { "&Ellipse Paint",    "Ellipse",  Tool::EllipsePaint,    Qt::Key_E },
+        { "Rect &Outline",     "Outline",  Tool::RectOutline,     Qt::Key_U },
         { "Tile P&ick",        "Pick",     Tool::TilePick,        Qt::Key_I },
         { "&Rect Select",      "Rect Sel", Tool::RectSelect,      Qt::Key_R },
         { "Rect &Fill",        "Fill",     Tool::RectFill,        Qt::Key_F },
@@ -701,7 +702,8 @@ void MainWindow::onSetTool(Tool t)
 {
     m_view->setTool(t);
 
-    const char* names[] = {"Tile Paint", "Ellipse Paint", "Tile Pick", "Rect Select", "Rect Fill",
+    const char* names[] = {"Tile Paint", "Ellipse Paint", "Rect Outline", "Tile Pick",
+                            "Rect Select", "Rect Fill",
                             "Stamp Paint", "Place Outpost", "Place Spawnpoint", "Select Object"};
     statusBar()->showMessage(
         QString("Tool: %1").arg(names[int(t)]), 2000);
