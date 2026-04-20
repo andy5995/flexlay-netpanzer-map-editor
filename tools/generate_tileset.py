@@ -121,7 +121,7 @@ def build_palette():
 
 TILE_W = 32
 TILE_H = 32
-BORDER = 8  # transition zone width in pixels
+BORDER = 16  # half the tile — makes transitions clearly visible
 
 # What terrain colour appears at each terrain's exposed edges.
 # None = grass (background); darken instead of blending.
@@ -148,11 +148,6 @@ def pixel_for(terrain_idx, nx, ny):
     idx = terrain_palette_base(terrain_idx) + shade_offset
     return max(terrain_idx * 8, min(terrain_idx * 8 + 7, idx))
 
-def dither_threshold(px, py):
-    """Deterministic per-pixel threshold in [0,1) for ordered dithering."""
-    h = abs(math.sin(px * 73.856 + py * 151.345 + 0.5) * 43758.5453)
-    return (int(h) % 100) / 100.0
-
 def edge_dist(px, py, n, e, s, w, ne, se, sw, nw):
     """Distance to the nearest exposed edge/corner (Chebyshev for corners)."""
     INF = BORDER + 1
@@ -171,7 +166,8 @@ def edge_dist(px, py, n, e, s, w, ne, se, sw, nw):
 def make_tile_pixels(terrain_idx, bitmask, neighbor_idx):
     """
     Generate 32×32 raw palette-indexed pixels for a terrain+bitmask combo.
-    Exposed edges dither-blend toward neighbor_idx terrain (or darken if None).
+    Exposed edges (within BORDER pixels) are painted as the neighbor terrain,
+    giving a clear half-and-half transition visible in the tile browser.
     """
     pixels = bytearray(TILE_W * TILE_H)
 
@@ -188,21 +184,12 @@ def make_tile_pixels(terrain_idx, bitmask, neighbor_idx):
             dist = edge_dist(px, py, n, e, s, w, ne, se, sw, nw)
 
             if dist < BORDER:
-                t = dist / BORDER  # 0.0 at edge → 1.0 at interior
                 if neighbor_idx is not None:
-                    # Dither between neighbor and current terrain
-                    if t < dither_threshold(px, py):
-                        idx = pixel_for(neighbor_idx,
-                                        fnx + neighbor_idx * 0.13,
-                                        fny + neighbor_idx * 0.07)
-                    else:
-                        idx = pixel_for(terrain_idx,
-                                        fnx + terrain_idx * 0.13,
-                                        fny + terrain_idx * 0.07)
+                    idx = pixel_for(neighbor_idx,
+                                    fnx + neighbor_idx * 0.13,
+                                    fny + neighbor_idx * 0.07)
                 else:
-                    # Background terrain (grass): shade darkens toward edge
-                    shade = int(t * 4)  # 0..3
-                    idx = terrain_idx * 8 + shade
+                    idx = terrain_idx * 8 + 1  # slight darken at edge
             else:
                 idx = pixel_for(terrain_idx,
                                 fnx + terrain_idx * 0.13,
