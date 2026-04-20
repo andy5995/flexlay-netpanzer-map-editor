@@ -61,7 +61,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     // Auto-load any .stamps.json files found in data/stamps/ next to the binary
     const QString appDir = QCoreApplication::applicationDirPath();
     QSet<QString> seenStampDirs;
-    for (const QString& candidate : {appDir + "/data/stamps", appDir + "/../data/stamps"}) {
+    for (const QString& candidate : {
+             appDir + "/../share/netpanzer-editor/stamps", // installed / AppImage
+             appDir + "/data/stamps",                      // running from build dir
+             appDir + "/../data/stamps"}) {                // running from build subdir
         const QString canon = QDir(candidate).canonicalPath();
         if (canon.isEmpty() || seenStampDirs.contains(canon)) continue;
         seenStampDirs.insert(canon);
