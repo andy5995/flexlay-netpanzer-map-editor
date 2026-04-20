@@ -45,9 +45,9 @@ and structures with the tools above, and save it under a new name.
 - Object renaming via double-click or context menu
 - Minimap with viewport overlay and click-to-pan
 - Zoom toward cursor
-- Keyboard shortcuts: `T` (tile paint), `E` (ellipse), `U` (rect outline), `I` (pick),
-  `R` (rect select), `F` (rect fill), `M` (stamp), `O` (place outpost), `S` (spawn point),
-  `V` (select object), `G` (grid)
+- Keyboard shortcuts: `T` (tile paint), `E` (ellipse), `U` (rect outline), `P` (trapezoid),
+  `I` (pick), `R` (rect select), `F` (rect fill), `M` (stamp), `O` (place outpost),
+  `S` (spawn point), `V` (select object), `G` (grid)
 
 ## Building
 
