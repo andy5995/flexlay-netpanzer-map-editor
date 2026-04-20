@@ -553,15 +553,18 @@ void MainWindow::onNewMap()
     auto* tsRow    = new QWidget;
     auto* tsLayout = new QHBoxLayout(tsRow);
     tsLayout->setContentsMargins(0, 0, 0, 0);
-    auto* browseBtn = new QPushButton("Browse...");
+    auto* browseBtn  = new QPushButton("Browse...");
+    QString tsFullPath;  // full path when Browse is used
     tsLayout->addWidget(tsEdit);
     tsLayout->addWidget(browseBtn);
     connect(browseBtn, &QPushButton::clicked, [&]() {
         const QString fn = QFileDialog::getOpenFileName(
             &dlg, "Select tileset", {},
             "netPanzer tilesets (*.tls);;All files (*)");
-        if (!fn.isEmpty())
+        if (!fn.isEmpty()) {
             tsEdit->setText(QFileInfo(fn).fileName());
+            tsFullPath = fn;
+        }
     });
 
     layout->addRow("Name:",    nameEdit);
@@ -589,6 +592,16 @@ void MainWindow::onNewMap()
     setCurrentFile({});
     m_undoAct->setEnabled(false);
     m_redoAct->setEnabled(false);
+
+    // Load the tileset: use Browse path if available, otherwise search by name
+    if (tsFullPath.isEmpty())
+        tsFullPath = findTileset(
+            QCoreApplication::applicationDirPath() + "/../data/maps/dummy.npm",
+            m.tileSetName);
+    if (!tsFullPath.isEmpty() && m_tileset.load(tsFullPath)) {
+        applyTileset();
+        loadAutotileData(tsFullPath);
+    }
 }
 
 void MainWindow::loadAutotileData(const QString& tlsPath)
