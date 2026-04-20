@@ -35,6 +35,7 @@ public:
 
     void setMap(const Map& map);
     const Map& map() const { return m_map; }
+    Map&       map()       { return m_map; }
 
     void setTileset(const Tileset* ts);
     const Tileset* tileset() const { return m_tileset; }

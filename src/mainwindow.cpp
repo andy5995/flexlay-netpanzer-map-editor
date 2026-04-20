@@ -645,6 +645,7 @@ void MainWindow::onLoadTileset()
         QMessageBox::warning(this, "Load failed", "Could not load:\n" + fn);
         return;
     }
+    m_view->map().tileSetName = QFileInfo(fn).fileName();
     applyTileset();
     loadAutotileData(fn);
     statusBar()->showMessage("Tileset: " + QFileInfo(fn).fileName(), 4000);
