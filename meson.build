@@ -42,8 +42,13 @@ executable('netpanzer-editor',
 # ---------------------------------------------------------------------------
 # Install
 
-install_data('data/autotile/summer12mb.autotile.json',
+install_data(
+  'data/autotile/summer12mb.autotile.json',
+  'data/autotile/generated.autotile.json',
   install_dir : get_option('datadir') / 'netpanzer-editor' / 'autotile')
+
+install_subdir('data/stamps',
+  install_dir : get_option('datadir') / 'netpanzer-editor')
 
 if host_machine.system() == 'linux'
   install_data('netpanzer-editor.desktop',
