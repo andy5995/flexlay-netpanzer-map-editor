@@ -302,8 +302,13 @@ def main():
             all_pixels.append(make_tile_pixels(ti, bm))
         print(f"  {name}: {len(BITMASKS)} tiles")
 
-    tls_path = os.path.join(out, 'generated.tls')
-    act_path = os.path.join(out, 'generated.act')
+    # Mirror the summer12mb layout: wads/generated/Default/generated.tls
+    wads_dir = os.path.join(out, 'Default')
+    os.makedirs(wads_dir, exist_ok=True)
+
+    tls_path  = os.path.join(wads_dir, 'generated.tls')
+    act_path  = os.path.join(wads_dir, 'generated.act')
+    cfg_path  = os.path.join(wads_dir, 'Default.cfg')
     json_path = os.path.join(out, 'generated.autotile.json')
 
     print(f"Writing {tls_path} ...")
@@ -311,6 +316,10 @@ def main():
 
     print(f"Writing {act_path} ...")
     write_act(act_path, pal)
+
+    with open(cfg_path, 'w') as f:
+        f.write("craters_lifetime = 0\ncraters_fading = 0\nunits_shadow_blending = 0\n")
+    print(f"  wrote {cfg_path}")
 
     write_autotile_json(json_path)
 
@@ -320,9 +329,9 @@ def main():
     print(f"  Tiles: {tile_count}")
     print(f"  .tls size: {tls_size} bytes")
     print(f"\nTo use in the editor:")
-    print(f"  Copy {tls_path} and {act_path} to your data/wads/ directory.")
-    print(f"  Copy {json_path} to data/autotile/.")
-    print(f"  Open the editor and load generated.tls.")
+    print(f"  Place the output dir as data/wads/generated/")
+    print(f"  Copy {json_path} to data/autotile/")
+    print(f"  In the New Map dialog, type 'generated.tls' or use Browse.")
 
 if __name__ == '__main__':
     main()

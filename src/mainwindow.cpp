@@ -26,6 +26,8 @@
 #include <QTime>
 #include <QSettings>
 #include <QCoreApplication>
+#include <QPushButton>
+#include <QHBoxLayout>
 #include <cmath>
 
 static constexpr int MAX_RECENT = 8;
@@ -546,12 +548,26 @@ void MainWindow::onNewMap()
     auto* nameEdit = new QLineEdit("Unnamed");
     auto* wSpin    = new QSpinBox(); wSpin->setRange(16, 4096); wSpin->setValue(128);
     auto* hSpin    = new QSpinBox(); hSpin->setRange(16, 4096); hSpin->setValue(128);
+
     auto* tsEdit   = new QLineEdit("summer12mb.tls");
+    auto* tsRow    = new QWidget;
+    auto* tsLayout = new QHBoxLayout(tsRow);
+    tsLayout->setContentsMargins(0, 0, 0, 0);
+    auto* browseBtn = new QPushButton("Browse...");
+    tsLayout->addWidget(tsEdit);
+    tsLayout->addWidget(browseBtn);
+    connect(browseBtn, &QPushButton::clicked, [&]() {
+        const QString fn = QFileDialog::getOpenFileName(
+            &dlg, "Select tileset", {},
+            "netPanzer tilesets (*.tls);;All files (*)");
+        if (!fn.isEmpty())
+            tsEdit->setText(QFileInfo(fn).fileName());
+    });
 
     layout->addRow("Name:",    nameEdit);
     layout->addRow("Width:",   wSpin);
     layout->addRow("Height:",  hSpin);
-    layout->addRow("Tileset:", tsEdit);
+    layout->addRow("Tileset:", tsRow);
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     layout->addRow(buttons);
