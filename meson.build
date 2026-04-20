@@ -53,7 +53,7 @@ if host_machine.system() == 'linux'
     install_dir : get_option('datadir') / 'pixmaps',
     rename      : 'netpanzer-editor.png')
 
-  install_data(['COPYING', 'README'],
+  install_data(['COPYING', 'README.md'],
     install_dir : get_option('datadir') / 'doc' / 'netpanzer-editor')
 endif
 
