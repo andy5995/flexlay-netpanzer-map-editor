@@ -141,4 +141,4 @@ Parsers must normalise this by inserting a newline before each `Location:` token
 
 Pixel data for tile *i* starts at offset `840 + 3 × tile_count + i × 1024` and is 1024 bytes of palette-indexed (8-bit) pixels in row-major order.
 
-> **Note:** The editor uses the external `netp.act` Adobe Color Table palette for rendering rather than the palette embedded in the `.tls` file, to match netPanzer's runtime appearance.
+> **Note:** The editor uses an external Adobe Color Table (`.act`) palette for rendering rather than the palette embedded in the `.tls` file.  It first checks for a same-stem `.act` file in the same directory as the `.tls` (e.g. `generated.act` beside `generated.tls`), then falls back to searching parent directories for `netp.act` to match netPanzer's runtime appearance.

@@ -19,22 +19,35 @@ neighbours — in a single step.
 
 ## Sidecar file
 
-Place a JSON file alongside your `.tls` file using the same stem:
+The editor searches for `<tileset-stem>.autotile.json` in order:
 
-    summer12mb.tls          ← tileset
-    summer12mb.autotile.json  ← sidecar (auto-discovered)
+1. Same directory as the `.tls` file
+2. `<app>/share/netpanzer-editor/autotile/` (installed AppImage path)
+3. `<app>/data/autotile/` (beside the binary)
+4. `<app>/../data/autotile/` (running from a build subdirectory)
 
-The editor looks for `<tileset-stem>.autotile.json` in the same directory as the
-`.tls` file whenever a tileset is loaded.  If the file is found the **Autotile**
-toggle in the Tools menu (and toolbar) becomes active.
+If the file is found the **Autotile** toggle in the Tools menu (and toolbar)
+becomes active.  Example layout:
+
+    data/wads/summer12mb/SummerDay/summer12mb.tls
+    data/autotile/summer12mb.autotile.json     ← found via path 4 above
 
 ## JSON schema
+
+Each group must have a `member_tiles` array listing every tile ID that belongs
+to the terrain.  The editor uses this to identify which painted tiles should
+trigger autotiling and to compute neighbour bitmasks.
+
+The `bitmask` object maps bitmask values (as strings) to tile IDs.  Groups
+without a `bitmask` object (stamp-type groups such as buildings or mountains)
+are recognised as members but are not subject to autotile replacement.
 
 ```json
 {
   "groups": [
     {
       "name": "grass",
+      "member_tiles": [8097, 8098, 8099],
       "bitmask": {
         "0":   10,
         "1":   11,
@@ -84,6 +97,27 @@ bit 5 ( 32)  bit 4 ( 16)  bit 3 (  8)
 |  6  |  64   | W         |
 |  7  | 128   | NW        |
 
-If the exact bitmask is not in the table the editor falls back to bitmask `0`
-(the fully-isolated tile).  If bitmask `0` is also absent the tile ID selected
-in the palette is placed unchanged.
+If the exact bitmask is not in the table the editor falls back to bitmask `255`
+(the fully-surrounded tile).  If `255` is also absent the tile is left unchanged.
+
+## Deriving bitmask mappings from an existing tileset
+
+If you have a tileset whose bitmask data was never recorded (such as
+`summer12mb.tls`), use the derivation tool to infer mappings from tile imagery:
+
+```sh
+python3 tools/derive_autotile_bitmasks.py \
+    --tls  /path/to/summer12mb.tls \
+    --act  /path/to/netp.act \
+    --json data/autotile/summer12mb.autotile.json \
+    --out  /tmp/summer12mb_derived
+```
+
+The tool selects the most-uniform tile per group as the bitmask-255 reference,
+compares each tile's 8 directional edge zones against that reference, and
+auto-calibrates a match threshold to maximise canonical bitmask coverage.
+Review the `.bitmask_report.txt` output and adjust `--threshold` if needed.
+
+Groups that contain pre-drawn artistic stamps (mountains, buildings) rather than
+autotile terrain variants should have their `bitmask` entries removed — the tool
+preserves groups that already have more than 5 entries and skips them.
