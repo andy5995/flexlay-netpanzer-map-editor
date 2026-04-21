@@ -49,7 +49,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
     m_stampPanel = new StampPanel(this);
     addDockWidget(Qt::LeftDockWidgetArea, m_stampPanel);
-    m_stampPanel->hide();   // hidden by default
 
     m_minimap = new Minimap(this);
     addDockWidget(Qt::RightDockWidgetArea, m_minimap);
