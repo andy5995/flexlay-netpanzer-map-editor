@@ -28,6 +28,7 @@ and structures with the tools above, and save it under a new name.
 ## Features
 
 - Open and save netPanzer `.npm` maps (binary format, verified round-trip) — see [docs/map-format.md](docs/map-format.md)
+- Add new tiles to any `.tls` tileset via `tools/add_tile.py` — see [docs/adding-tiles.md](docs/adding-tiles.md)
 - Tile painting with full undo/redo
 - Ellipse paint tool — drag to paint tiles along an ellipse outline
 - Rect select and stamp system — drag-select a region, save as a stamp, place
