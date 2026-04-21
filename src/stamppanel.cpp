@@ -19,7 +19,7 @@
 
 StampWidget::StampWidget(QWidget* parent) : QWidget(parent)
 {
-    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 }
 
 void StampWidget::setTileset(const Tileset* ts)
@@ -34,7 +34,7 @@ void StampWidget::addStamp(Stamp s)
 {
     m_stamps.push_back(std::move(s));
     m_selected = int(m_stamps.size()) - 1;
-    updateGeometry();
+    adjustSize();
     update();
     emit stampSelected(&m_stamps.back());
 }
@@ -43,7 +43,7 @@ void StampWidget::clear()
 {
     m_stamps.clear();
     m_selected = -1;
-    updateGeometry();
+    adjustSize();
     update();
 }
 
@@ -51,7 +51,7 @@ void StampWidget::setStamps(std::vector<Stamp> stamps)
 {
     m_stamps   = std::move(stamps);
     m_selected = m_stamps.empty() ? -1 : 0;
-    updateGeometry();
+    adjustSize();
     update();
     if (m_selected >= 0)
         emit stampSelected(&m_stamps[0]);
@@ -69,12 +69,22 @@ int StampWidget::cols() const
     return std::max(1, width() / cell);
 }
 
+int StampWidget::heightForWidth(int w) const
+{
+    const int cell  = THUMB + PADDING;
+    const int c     = std::max(1, w / cell);
+    const int rows  = (int(m_stamps.size()) + c - 1) / c;
+    return std::max(cell + 20, rows * (cell + 20));
+}
+
 QSize StampWidget::sizeHint() const
 {
-    if (m_stamps.empty()) return QSize(THUMB + PADDING, THUMB + PADDING + 20);
-    const int c    = std::max(1, cols());
-    const int rows = (int(m_stamps.size()) + c - 1) / c;
-    return QSize(c * (THUMB + PADDING), rows * (THUMB + PADDING + 20));
+    // Use a fixed 3-column default so the widget has a stable natural height
+    // that the QScrollArea can measure without first knowing our width.
+    const int cell = THUMB + PADDING;
+    const int fixedCols = 3;
+    const int w    = fixedCols * cell;
+    return QSize(w, heightForWidth(w));
 }
 
 int StampWidget::stampAt(QPoint pos) const
@@ -192,7 +202,7 @@ StampPanel::StampPanel(QWidget* parent)
                 | QDockWidget::DockWidgetClosable);
 
     m_scroll->setWidget(m_widget);
-    m_scroll->setWidgetResizable(true);
+    m_scroll->setWidgetResizable(false);
     m_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 

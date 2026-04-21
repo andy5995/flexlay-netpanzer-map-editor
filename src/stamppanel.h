@@ -27,7 +27,9 @@ signals:
 protected:
     void paintEvent(QPaintEvent*) override;
     void mousePressEvent(QMouseEvent*) override;
-    QSize sizeHint() const override;
+    QSize sizeHint()        const override;
+    bool  hasHeightForWidth() const override { return true; }
+    int   heightForWidth(int w) const override;
 
 private:
     static constexpr int THUMB   = 96;
