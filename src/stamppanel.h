@@ -5,6 +5,7 @@
 #include <QScrollArea>
 #include <QPushButton>
 #include <QKeyEvent>
+#include <QEvent>
 #include <vector>
 #include "stamp.h"
 #include "tlsloader.h"
@@ -22,6 +23,8 @@ public:
     const Stamp* selectedStamp() const;
     const std::vector<Stamp>& stamps() const { return m_stamps; }
     void setStamps(std::vector<Stamp> stamps);
+    bool  hasHeightForWidth() const override { return true; }
+    int   heightForWidth(int w) const override;
 
 signals:
     void stampSelected(const Stamp* stamp);
@@ -30,9 +33,7 @@ protected:
     void paintEvent(QPaintEvent*) override;
     void mousePressEvent(QMouseEvent*) override;
     void keyPressEvent(QKeyEvent*) override;
-    QSize sizeHint()        const override;
-    bool  hasHeightForWidth() const override { return true; }
-    int   heightForWidth(int w) const override;
+    QSize sizeHint() const override;
 
 private:
     static constexpr int THUMB   = 96;
@@ -65,7 +66,12 @@ signals:
     void stampSelected(const Stamp* stamp);
     void captureRequested();
 
+protected:
+    bool eventFilter(QObject* obj, QEvent* ev) override;
+
 private:
+    void fitWidgetToViewport();
+
     StampWidget*  m_widget;
     QScrollArea*  m_scroll;
     QPushButton*  m_captureBtn;

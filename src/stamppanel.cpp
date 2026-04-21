@@ -19,7 +19,7 @@
 
 StampWidget::StampWidget(QWidget* parent) : QWidget(parent)
 {
-    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     setFocusPolicy(Qt::ClickFocus);
 }
 
@@ -35,7 +35,7 @@ void StampWidget::addStamp(Stamp s)
 {
     m_stamps.push_back(std::move(s));
     m_selected = int(m_stamps.size()) - 1;
-    adjustSize();
+    updateGeometry();
     update();
     emit stampSelected(&m_stamps.back());
 }
@@ -44,7 +44,7 @@ void StampWidget::clear()
 {
     m_stamps.clear();
     m_selected = -1;
-    adjustSize();
+    updateGeometry();
     update();
 }
 
@@ -58,7 +58,7 @@ void StampWidget::setStamps(std::vector<Stamp> stamps)
 {
     m_stamps   = std::move(stamps);
     m_selected = m_stamps.empty() ? -1 : 0;
-    adjustSize();
+    updateGeometry();
     update();
     if (m_selected >= 0)
         emit stampSelected(&m_stamps[0]);
@@ -86,11 +86,8 @@ int StampWidget::heightForWidth(int w) const
 
 QSize StampWidget::sizeHint() const
 {
-    // Use a fixed 3-column default so the widget has a stable natural height
-    // that the QScrollArea can measure without first knowing our width.
     const int cell = THUMB + PADDING;
-    const int fixedCols = 3;
-    const int w    = fixedCols * cell;
+    const int w = std::max(cell, width());
     return QSize(w, heightForWidth(w));
 }
 
@@ -229,6 +226,7 @@ StampPanel::StampPanel(QWidget* parent)
     m_scroll->setWidgetResizable(false);
     m_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    m_scroll->viewport()->installEventFilter(this);
 
     auto* btnRow = new QHBoxLayout();
     btnRow->setContentsMargins(0, 0, 0, 0);
@@ -340,4 +338,18 @@ void StampPanel::clearSelection()
 const Stamp* StampPanel::selectedStamp() const
 {
     return m_widget->selectedStamp();
+}
+
+void StampPanel::fitWidgetToViewport()
+{
+    const int vw = m_scroll->viewport()->width();
+    const int h  = m_widget->heightForWidth(vw);
+    m_widget->setFixedSize(vw, h);
+}
+
+bool StampPanel::eventFilter(QObject* obj, QEvent* ev)
+{
+    if (obj == m_scroll->viewport() && ev->type() == QEvent::Resize)
+        fitWidgetToViewport();
+    return QDockWidget::eventFilter(obj, ev);
 }
