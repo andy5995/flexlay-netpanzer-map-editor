@@ -63,6 +63,23 @@ python3 tools/replace_tile.py \
 
 The same quantization and backup logic applies.
 
+## Regenerating the river-to-water transition tiles
+
+`tools/gen_river_water_transitions.py` is a summer12mb-specific script that
+generates blended transition tiles between the river edge tiles (IDs 9467–9469)
+and the deep-water tiles (IDs 10967–10969), and appends them to every variant
+of the tileset.
+
+```sh
+python3 tools/gen_river_water_transitions.py \
+    --wads /path/to/netpanzer/data/wads
+```
+
+This produces three new tiles per variant (IDs 11961–11963 for most variants,
+11960–11962 for Desert).  Run it again after any upstream change to the source
+river or water tiles; it will strip and replace the previous transition tiles
+automatically.
+
 ## Notes on the `.tls` format
 
 Each tile is stored as 1024 bytes of palette indices (32 × 32, row-major,
