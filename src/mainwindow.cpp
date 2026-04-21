@@ -317,6 +317,8 @@ void MainWindow::setCurrentFile(const QString& path)
     m_modified    = false;
     m_saveAct->setEnabled(!path.isEmpty());
     updateTitle();
+    if (!path.isEmpty())
+        addToRecentFiles(path);
 }
 
 // ---------------------------------------------------------------------------
@@ -413,7 +415,6 @@ void MainWindow::openFile(const QString& fn)
     setCurrentFile(fn);
     m_undoAct->setEnabled(false);
     m_redoAct->setEnabled(false);
-    addToRecentFiles(fn);
 
     // Auto-detect tileset
     const QString tsPath = findTileset(fn, m.tileSetName);
