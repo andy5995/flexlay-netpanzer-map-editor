@@ -97,6 +97,7 @@ signals:
     void objectSelectionChanged(int idx); // -1 = none
     void objectActivated(int idx);        // double-click on an object
     void viewportChanged(QRectF tileRect);
+    void stampDeselected();               // right-click or Escape in stamp mode
 
 protected:
     void paintEvent(QPaintEvent*)         override;

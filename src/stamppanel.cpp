@@ -20,6 +20,7 @@
 StampWidget::StampWidget(QWidget* parent) : QWidget(parent)
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    setFocusPolicy(Qt::ClickFocus);
 }
 
 void StampWidget::setTileset(const Tileset* ts)
@@ -44,6 +45,12 @@ void StampWidget::clear()
     m_stamps.clear();
     m_selected = -1;
     adjustSize();
+    update();
+}
+
+void StampWidget::clearSelection()
+{
+    m_selected = -1;
     update();
 }
 
@@ -177,6 +184,12 @@ void StampWidget::paintEvent(QPaintEvent*)
 
 void StampWidget::mousePressEvent(QMouseEvent* ev)
 {
+    if (ev->button() == Qt::RightButton) {
+        m_selected = -1;
+        update();
+        emit stampSelected(nullptr);
+        return;
+    }
     if (ev->button() != Qt::LeftButton) return;
     const int id = stampAt(ev->pos());
     if (id >= 0) {
@@ -184,6 +197,17 @@ void StampWidget::mousePressEvent(QMouseEvent* ev)
         update();
         emit stampSelected(&m_stamps[size_t(id)]);
     }
+}
+
+void StampWidget::keyPressEvent(QKeyEvent* ev)
+{
+    if (ev->key() == Qt::Key_Escape) {
+        m_selected = -1;
+        update();
+        emit stampSelected(nullptr);
+        return;
+    }
+    QWidget::keyPressEvent(ev);
 }
 
 // ---------------------------------------------------------------------------
@@ -306,6 +330,11 @@ void StampPanel::addStamp(Stamp s)
 void StampPanel::setTileset(const Tileset* ts)
 {
     m_widget->setTileset(ts);
+}
+
+void StampPanel::clearSelection()
+{
+    m_widget->clearSelection();
 }
 
 const Stamp* StampPanel::selectedStamp() const

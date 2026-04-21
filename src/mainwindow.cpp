@@ -109,7 +109,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     });
     connect(m_stampPanel, &StampPanel::stampSelected, this, [this](const Stamp* stamp) {
         m_view->setCurrentStamp(stamp);
-        m_view->setTool(Tool::StampPaint);
+        if (stamp)
+            m_view->setTool(Tool::StampPaint);
+    });
+    connect(m_view, &MapView::stampDeselected, this, [this]() {
+        m_view->setTool(Tool::TilePaint);
     });
     connect(m_minimap,   &Minimap::panRequested,   this,   &MainWindow::onMinimapPan);
 }

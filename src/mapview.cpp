@@ -1030,6 +1030,10 @@ void MapView::leaveEvent(QEvent*)
 
 void MapView::keyPressEvent(QKeyEvent* ev)
 {
+    if (ev->key() == Qt::Key_Escape && m_tool == Tool::StampPaint) {
+        emit stampDeselected();
+        return;
+    }
     if (ev->key() == Qt::Key_Delete || ev->key() == Qt::Key_Backspace) {
         if (m_tool == Tool::SelectObject)
             deleteSelectedObject();
@@ -1041,6 +1045,11 @@ void MapView::keyPressEvent(QKeyEvent* ev)
 
 void MapView::contextMenuEvent(QContextMenuEvent* ev)
 {
+    if (m_tool == Tool::StampPaint) {
+        emit stampDeselected();
+        return;
+    }
+
     const int hit = objectAt(ev->pos());
     if (hit < 0) return;
 

@@ -4,6 +4,7 @@
 #include <QPixmap>
 #include <QScrollArea>
 #include <QPushButton>
+#include <QKeyEvent>
 #include <vector>
 #include "stamp.h"
 #include "tlsloader.h"
@@ -16,6 +17,7 @@ public:
     void addStamp(Stamp s);
     void setTileset(const Tileset* ts);
     void clear();
+    void clearSelection();
 
     const Stamp* selectedStamp() const;
     const std::vector<Stamp>& stamps() const { return m_stamps; }
@@ -27,6 +29,7 @@ signals:
 protected:
     void paintEvent(QPaintEvent*) override;
     void mousePressEvent(QMouseEvent*) override;
+    void keyPressEvent(QKeyEvent*) override;
     QSize sizeHint()        const override;
     bool  hasHeightForWidth() const override { return true; }
     int   heightForWidth(int w) const override;
@@ -51,6 +54,7 @@ public:
 
     void addStamp(Stamp s);
     void setTileset(const Tileset* ts);
+    void clearSelection();
     const Stamp* selectedStamp() const;
 
     bool saveSelectedToFile(const QString& path) const;
