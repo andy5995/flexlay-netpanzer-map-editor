@@ -15,7 +15,9 @@ That said, there are quite a few ways to work with existing maps:
 - **Ellipse tool** — quickly outline roads, rivers, or crater rims
 - **Rect select + stamp** — copy any region of an existing map and paste it
   elsewhere, or save it as a named stamp for repeated use
-- **Pre-built stamps** — place the full outpost compound in one click
+- **Pre-built stamps** — 139 preset stamps across houses, mountains, roads,
+  rivers, trees, dirt patches, lakes, and outpost structures, imported from
+  the original Flexlay editor
 - **Tile pick** — sample any tile already on the map and paint with it
 - **Object editing** — move, rename, add, or remove outposts and spawn points
 - **Minimap navigation** — pan quickly around large maps
@@ -29,13 +31,16 @@ and structures with the tools above, and save it under a new name.
 - Tile painting with full undo/redo
 - Ellipse paint tool — drag to paint tiles along an ellipse outline
 - Rect select and stamp system — drag-select a region, save as a stamp, place
-  with one click; pre-built stamps auto-loaded from `data/stamps/` at startup
+  with one click; pre-built stamps auto-loaded from `data/stamps/` at startup;
+  139 preset stamps (houses, mountains, roads, rivers, trees, lakes, outpost
+  structures) imported from the original Flexlay editor via
+  `tools/import_flexlay_brushes.py`
 - Tile pick tool — click any map tile to select it for painting
 - Autotile — automatic transition-tile selection based on 8-neighbour bitmask;
   enabled when a `.autotile.json` sidecar is found for the loaded tileset
   (see [docs/autotile-format.md](docs/autotile-format.md))
 - Bundled generated tileset — works without netPanzer game data installed;
-  includes terrain autotile and the summer12mb outpost building as a stamp
+  includes terrain autotile and a bundled outpost stamp
   (see [docs/generated-tileset.md](docs/generated-tileset.md))
 - summer12mb autotile support — bitmask mappings derived from tile imagery via
   `tools/derive_autotile_bitmasks.py`; mountain/water/wall/road/grass/river covered
