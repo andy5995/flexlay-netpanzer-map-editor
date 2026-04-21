@@ -6,8 +6,7 @@ A Qt5-based map editor for the [netPanzer](https://netpanzer.io) open-source rea
 
 The editor is functional but still early in development.  Creating a polished
 map from scratch is challenging — there is no flood-fill or per-tile attribute
-editing yet, and the bundled generated tileset cannot be used in the netPanzer
-engine itself.
+editing yet.
 
 That said, there are quite a few ways to work with existing maps:
 
@@ -40,9 +39,6 @@ and structures with the tools above, and save it under a new name.
 - Autotile — automatic transition-tile selection based on 8-neighbour bitmask;
   enabled when a `.autotile.json` sidecar is found for the loaded tileset
   (see [docs/autotile-format.md](docs/autotile-format.md))
-- Bundled generated tileset — works without netPanzer game data installed;
-  includes terrain autotile and a bundled outpost stamp
-  (see [docs/generated-tileset.md](docs/generated-tileset.md))
 - summer12mb autotile support — bitmask mappings derived from tile imagery via
   `tools/derive_autotile_bitmasks.py`; mountain/water/wall/road/grass/river covered
 - Tileset auto-detected when opening a map or creating a new one
