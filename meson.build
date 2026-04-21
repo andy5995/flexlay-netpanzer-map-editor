@@ -44,7 +44,6 @@ executable('netpanzer-editor',
 
 install_data(
   'data/autotile/summer12mb.autotile.json',
-  'data/autotile/generated.autotile.json',
   install_dir : get_option('datadir') / 'netpanzer-editor' / 'autotile')
 
 install_subdir('data/stamps',
