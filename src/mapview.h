@@ -168,6 +168,7 @@ private:
     // Stamp paint state
     const Stamp* m_currentStamp    = nullptr;
     QPoint       m_stampHoverTile  = QPoint(-1, -1);
+    bool         m_stampPainting   = false;
 
     // Outpost placement hover (tile coords, (-1,-1) = none)
     QPoint m_outpostHoverTile = QPoint(-1, -1);

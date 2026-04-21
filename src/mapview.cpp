@@ -78,12 +78,15 @@ void MapView::setTool(Tool t)
     m_tool = t;
     emit toolChanged(t);
     commitStroke();
-    m_draggingObj = false;
-    m_selectedObj = -1;
-    m_outpostHoverTile = QPoint(-1, -1);
+    m_draggingObj     = false;
+    m_selectedObj     = -1;
+    m_stampPainting   = false;
+    m_stampHoverTile  = QPoint(-1, -1);
+    m_outpostHoverTile  = QPoint(-1, -1);
     m_ellipseActive     = false;
     m_rectOutlineActive = false;
     emit objectSelectionChanged(-1);
+    update();
 
     switch (t) {
     case Tool::TilePick:        setCursor(Qt::PointingHandCursor); break;
@@ -535,7 +538,7 @@ void MapView::paintEvent(QPaintEvent*)
         m_stampHoverTile.x() >= 0 && !m_atlasPixmap.isNull()) {
         const int tx = m_stampHoverTile.x();
         const int ty = m_stampHoverTile.y();
-        p.setOpacity(0.55);
+        p.setOpacity(0.4);
         for (int row = 0; row < m_currentStamp->height; ++row) {
             for (int col = 0; col < m_currentStamp->width; ++col) {
                 const int id  = m_currentStamp->tiles[size_t(row * m_currentStamp->width + col)];
@@ -545,7 +548,20 @@ void MapView::paintEvent(QPaintEvent*)
                     m_atlasPixmap, QRectF(src));
             }
         }
+        // Blue tint overlay so the preview is clearly distinct from placed tiles
+        p.setOpacity(0.25);
+        p.fillRect(QRectF(tx * TILE_SIZE, ty * TILE_SIZE,
+                          m_currentStamp->width  * TILE_SIZE,
+                          m_currentStamp->height * TILE_SIZE),
+                   QColor(0, 120, 255));
         p.setOpacity(1.0);
+        // Dashed border around the preview region
+        QPen pen(QColor(0, 180, 255), 1, Qt::DashLine);
+        p.setPen(pen);
+        p.setBrush(Qt::NoBrush);
+        p.drawRect(QRectF(tx * TILE_SIZE, ty * TILE_SIZE,
+                          m_currentStamp->width  * TILE_SIZE,
+                          m_currentStamp->height * TILE_SIZE));
     }
 
     // Rect fill preview
@@ -713,6 +729,13 @@ void MapView::mousePressEvent(QMouseEvent* ev)
         return;
     }
 
+    if (ev->button() == Qt::RightButton && m_tool == Tool::StampPaint) {
+        m_stampPainting  = false;
+        m_stampHoverTile = QPoint(-1, -1);
+        emit stampDeselected();
+        return;
+    }
+
     if (ev->button() != Qt::LeftButton) return;
 
     switch (m_tool) {
@@ -769,6 +792,7 @@ void MapView::mousePressEvent(QMouseEvent* ev)
     }
     case Tool::StampPaint: {
         int tx, ty;
+        m_stampPainting = true;
         if (widgetToTile(ev->pos(), tx, ty))
             applyStamp(tx, ty);
         break;
@@ -912,7 +936,7 @@ void MapView::mouseMoveEvent(QMouseEvent* ev)
         if (newHover != m_stampHoverTile) {
             m_stampHoverTile = newHover;
             update();
-            if ((ev->buttons() & Qt::LeftButton) && newHover.x() >= 0)
+            if (m_stampPainting && newHover.x() >= 0)
                 applyStamp(tx, ty);
         }
     }
@@ -948,6 +972,7 @@ void MapView::mouseReleaseEvent(QMouseEvent* ev)
     }
 
     if (ev->button() == Qt::LeftButton) {
+        m_stampPainting = false;
         if (m_tool == Tool::EllipsePaint && m_ellipseActive) {
             m_ellipseActive = false;
             const auto tiles = computeEllipseTiles(m_ellipseStart, m_ellipseEnd,
@@ -1046,6 +1071,7 @@ void MapView::keyPressEvent(QKeyEvent* ev)
 void MapView::contextMenuEvent(QContextMenuEvent* ev)
 {
     if (m_tool == Tool::StampPaint) {
+        m_stampPainting = false;
         emit stampDeselected();
         return;
     }
