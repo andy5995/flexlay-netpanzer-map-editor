@@ -27,6 +27,7 @@
 #include <QSettings>
 #include <QCoreApplication>
 #include <QPushButton>
+#include <QAbstractButton>
 #include <QHBoxLayout>
 #include <cmath>
 
@@ -34,6 +35,16 @@ static constexpr int MAX_RECENT = 8;
 
 // ---------------------------------------------------------------------------
 // Constructor
+
+static void setDockTooltips(QDockWidget* dock)
+{
+    for (auto* btn : dock->findChildren<QAbstractButton*>()) {
+        if (btn->objectName() == "qt_dockwidget_floatbutton")
+            btn->setToolTip("Undock");
+        else if (btn->objectName() == "qt_dockwidget_closebutton")
+            btn->setToolTip("Close");
+    }
+}
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 {
@@ -45,13 +56,16 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
     m_tileBrowser = new TileBrowser(this);
     addDockWidget(Qt::LeftDockWidgetArea, m_tileBrowser);
+    setDockTooltips(m_tileBrowser);
     m_tileBrowser->hide();  // hidden by default, opened from View menu
 
     m_stampPanel = new StampPanel(this);
     addDockWidget(Qt::LeftDockWidgetArea, m_stampPanel);
+    setDockTooltips(m_stampPanel);
 
     m_minimap = new Minimap(this);
     addDockWidget(Qt::RightDockWidgetArea, m_minimap);
+    setDockTooltips(m_minimap);
 
     setupMenus();
     setupToolbar();
