@@ -101,7 +101,6 @@ jobs:
           prerelease: true
           removeArtifacts: false
           replacesArtifacts: true
-          omitBodyDuringUpdate: true
           omitNameDuringUpdate: true
           tag: snapshot
           token: ${{ secrets.GITHUB_TOKEN }}
