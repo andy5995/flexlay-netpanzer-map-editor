@@ -23,6 +23,9 @@
 #include <QActionGroup>
 #include <QKeySequence>
 #include <QCloseEvent>
+#include <QDesktopServices>
+#include <QUrl>
+#include "config.h"
 #include <QTime>
 #include <QSettings>
 #include <QCoreApplication>
@@ -262,6 +265,30 @@ void MainWindow::setupMenus()
     auto* minimapAct = m_minimap->toggleViewAction();
     minimapAct->setText("&Minimap");
     view->addAction(minimapAct);
+
+    QMenu* help = menuBar()->addMenu("&Help");
+
+    QAction* contentsAct = help->addAction("&Contents");
+    contentsAct->setShortcut(QKeySequence::HelpContents);
+    connect(contentsAct, &QAction::triggered, this, []() {
+        QMessageBox::information(nullptr, "Help Contents",
+            "The documentation is available online:<br><br>"
+            "<a href=\"https://github.com/netpanzer/flexlay-netpanzer-map-editor/blob/main/README.md\">"
+            "github.com/netpanzer/flexlay-netpanzer-map-editor</a>");
+    });
+
+    help->addSeparator();
+
+    QAction* aboutAct = help->addAction("&About");
+    connect(aboutAct, &QAction::triggered, this, []() {
+        QMessageBox::about(nullptr, "About netPanzer Map Editor",
+            QString("<h3>netPanzer Map Editor</h3>"
+                    "<p>Version %1</p>"
+                    "<p>A tile-based map editor for the netPanzer game.</p>"
+                    "<p><a href=\"https://github.com/netpanzer/flexlay-netpanzer-map-editor\">"
+                    "github.com/netpanzer/flexlay-netpanzer-map-editor</a></p>")
+                .arg(VERSION));
+    });
 }
 
 // ---------------------------------------------------------------------------

@@ -1,8 +1,13 @@
 project('netpanzer-map-editor', 'cpp',
-  version : '0.1',
+  version : '0.0.1',
   meson_version : '>= 0.61.0',
   default_options : ['cpp_std=c++17', 'warning_level=3']
 )
+
+conf = configuration_data()
+conf.set_quoted('VERSION', meson.project_version())
+configure_file(output : 'config.h', configuration : conf)
+build_inc = include_directories('.')  # for generated config.h
 
 qt5     = import('qt5')
 qt5_dep = dependency('qt5', modules : ['Core', 'Gui', 'Widgets'])
@@ -35,7 +40,7 @@ editor_sources = [
 executable('netpanzer-editor',
   sources             : editor_sources + moc_files,
   dependencies        : qt5_dep,
-  include_directories : include_directories('src'),
+  include_directories : [include_directories('src'), build_inc],
   install             : true,
 )
 
