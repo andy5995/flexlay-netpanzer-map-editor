@@ -38,6 +38,33 @@ and structures with the tools below, and save it under a new name.
   `R` (rect select), `F` (rect fill), `M` (stamp), `O` (place outpost), `S` (spawn point),
   `V` (select object), `G` (grid)
 
+## Workflows
+
+### Capture a map region as a stamp and save it
+
+1. Press `R` to switch to the **Rect Select** tool.
+2. Drag across the map to select the region you want to capture. A yellow
+   highlight shows the selection.
+3. Open the **Stamps** panel (View → Stamps if it isn't visible).
+4. Click **Capture Selection** — the region is added as a new stamp.
+5. Click the stamp to select it, then click **Save…** to write it to a
+   `.stamp.json` file. Saved stamps can be reloaded with **Load…** in any
+   future session.
+
+To place the stamp, press `M` (Stamp Paint) and click on the map.
+
+### Load stamps from a directory
+
+Stamps in `data/stamps/` are loaded automatically at startup. You can drop
+additional `.stamp.json` files there, or use **Load…** in the Stamps panel to
+load them from any location.
+
+### Drag-select tiles in the tile browser
+
+You can also drag-select a rectangular region in the **Tile Browser** to create
+a multi-tile stamp directly from the tileset — release the mouse to send it
+straight to the active stamp.
+
 ## Building
 
 See [BUILD.md](BUILD.md) for full build and AppImage instructions.
