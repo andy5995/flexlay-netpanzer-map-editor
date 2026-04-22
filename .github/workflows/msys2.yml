@@ -102,7 +102,6 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "netpanzer-editor-${{ env.VERSION }}-windows-x86_64-setup.exe*"
-          body: "NetPanzer Map Editor Snapshot Release"
           allowUpdates: true
           prerelease: true
           removeArtifacts: false
