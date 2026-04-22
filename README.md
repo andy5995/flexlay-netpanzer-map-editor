@@ -8,21 +8,8 @@ The editor is functional but still early in development.  Creating a polished
 map from scratch is challenging — there is no flood-fill or per-tile attribute
 editing yet.
 
-That said, there are quite a few ways to work with existing maps:
-
-- **Autotile painting** — paint terrain that blends smoothly with its neighbours
-- **Ellipse tool** — quickly outline roads, rivers, or crater rims
-- **Rect select + stamp** — copy any region of an existing map and paste it
-  elsewhere, or save it as a named stamp for repeated use
-- **Pre-built stamps** — 139 preset stamps across houses, mountains, roads,
-  rivers, trees, dirt patches, lakes, and outpost structures, imported from
-  the original Flexlay editor
-- **Tile pick** — sample any tile already on the map and paint with it
-- **Object editing** — move, rename, add, or remove outposts and spawn points
-- **Minimap navigation** — pan quickly around large maps
-
 The most practical workflow is to open an existing `.npm` map, reshape terrain
-and structures with the tools above, and save it under a new name.
+and structures with the tools below, and save it under a new name.
 
 ## Features
 
@@ -32,7 +19,7 @@ and structures with the tools above, and save it under a new name.
 - Ellipse paint tool — drag to paint tiles along an ellipse outline
 - Rect select and stamp system — drag-select a region, save as a stamp, place
   with one click; pre-built stamps auto-loaded from `data/stamps/` at startup;
-  139 preset stamps (houses, mountains, roads, rivers, trees, lakes, outpost
+  Over 100 preset stamps (houses, mountains, roads, rivers, trees, lakes, outpost
   structures) imported from the original Flexlay editor via
   `tools/import_flexlay_brushes.py`
 - Tile pick tool — click any map tile to select it for painting
@@ -65,6 +52,6 @@ ninja -C build
 
 ## License
 
-GNU GPL v3 — see [COPYING](COPYING) for details.  
-Original Flexlay code by Ingo Ruhnke &lt;grumbel@gmx.de&gt;.  
+GNU GPL v3 — see [COPYING](COPYING) for details.
+Original Flexlay code by Ingo Ruhnke &lt;grumbel@gmx.de&gt;.
 Qt5 port by andy5995.
