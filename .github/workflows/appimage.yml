@@ -79,7 +79,24 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "./out/*AppImage*"
-          body: "NetPanzer Map Editor Snapshot Release"
+          body: |
+            ## NetPanzer Map Editor — Snapshot Build
+
+            This is an automatically updated snapshot AppImage built from the latest commit on `main`.
+
+            ### Updating without re-downloading
+
+            The AppImage embeds zsync metadata, so you can download only the changed blocks:
+
+            **[AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate):**
+            ```
+            ./AppImageUpdate-x86_64.AppImage -O netpanzer-editor-snapshot-x86_64.AppImage
+            ```
+
+            **[appimageupdatetool](https://github.com/ivan-hc/AM) (from the AM application manager):**
+            ```
+            appimageupdatetool netpanzer-editor-snapshot-x86_64.AppImage
+            ```
           allowUpdates: true
           prerelease: true
           removeArtifacts: false
