@@ -23,6 +23,7 @@ moc_headers = [
   'src/minimap.h',
 ]
 moc_files = qt5.preprocess(moc_headers : moc_headers)
+rcc_files = qt5.preprocess(qresources : ['src/resources.qrc'])
 
 editor_sources = [
   'src/main.cpp',
@@ -38,7 +39,7 @@ editor_sources = [
 ]
 
 executable('netpanzer-editor',
-  sources             : editor_sources + moc_files,
+  sources             : editor_sources + moc_files + rcc_files,
   dependencies        : qt5_dep,
   include_directories : [include_directories('src'), build_inc],
   install             : true,
