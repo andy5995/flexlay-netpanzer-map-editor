@@ -71,13 +71,13 @@ meson setup build -Db_sanitize=address,undefined
 ninja -C build
 ```
 
-Known third-party leaks from fontconfig/Pango/GTK3 are suppressed via `asan.supp`.
+Known third-party leaks from fontconfig/Pango/GTK3 are suppressed via `lsan.supp`.
 `meson test` picks up the suppressions automatically via `LSAN_OPTIONS`.
 
 To run the editor with suppression active:
 
 ```sh
-LSAN_OPTIONS=suppressions=$(pwd)/asan.supp ./build/netpanzer-editor
+LSAN_OPTIONS=suppressions=$(pwd)/lsan.supp ./build/netpanzer-editor
 ```
 
 ## AppImage via Docker
