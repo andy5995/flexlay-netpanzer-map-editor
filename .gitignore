@@ -7,3 +7,7 @@
 
 # Windows installer staging directory
 /_staging/
+
+# Python bytecode cache
+__pycache__/
+*.pyc
