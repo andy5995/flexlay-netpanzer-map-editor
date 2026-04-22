@@ -31,6 +31,7 @@ protected:
     void mousePressEvent(QMouseEvent* ev) override;
     void mouseMoveEvent(QMouseEvent* ev) override;
     void mouseReleaseEvent(QMouseEvent* ev) override;
+    void keyPressEvent(QKeyEvent* ev) override;
     QSize sizeHint() const override;
 
 private:

@@ -30,6 +30,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent*) override;
     void leaveEvent(QEvent*) override;
     void resizeEvent(QResizeEvent*) override;
+    void keyPressEvent(QKeyEvent*) override;
     QSize sizeHint() const override;
 
 private:

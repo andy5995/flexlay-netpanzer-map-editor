@@ -3,6 +3,7 @@
 #include <QPaintEvent>
 #include <QMouseEvent>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QVBoxLayout>
 #include <algorithm>
 
@@ -14,6 +15,7 @@ TilePanelWidget::TilePanelWidget(QWidget* parent)
 {
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    setFocusPolicy(Qt::ClickFocus);
 }
 
 int TilePanelWidget::cols() const
@@ -191,6 +193,21 @@ void TilePanelWidget::mouseReleaseEvent(QMouseEvent* ev)
         update();
         emit stampCreated(std::move(s));
     }
+}
+
+void TilePanelWidget::keyPressEvent(QKeyEvent* ev)
+{
+    if (auto* sa = qobject_cast<QScrollArea*>(parentWidget() ? parentWidget()->parentWidget() : nullptr)) {
+        QScrollBar* sb = sa->verticalScrollBar();
+        switch (ev->key()) {
+        case Qt::Key_Home:     sb->setValue(sb->minimum()); return;
+        case Qt::Key_End:      sb->setValue(sb->maximum()); return;
+        case Qt::Key_PageUp:   sb->setValue(sb->value() - sb->pageStep()); return;
+        case Qt::Key_PageDown: sb->setValue(sb->value() + sb->pageStep()); return;
+        default: break;
+        }
+    }
+    QWidget::keyPressEvent(ev);
 }
 
 // ---------------------------------------------------------------------------

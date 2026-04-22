@@ -19,6 +19,7 @@ TileBrowserWidget::TileBrowserWidget(QWidget* parent)
 {
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    setFocusPolicy(Qt::ClickFocus);
 }
 
 void TileBrowserWidget::setTileset(const Tileset* ts)
@@ -225,6 +226,25 @@ void TileBrowserWidget::resizeEvent(QResizeEvent* ev)
 {
     QWidget::resizeEvent(ev);
     updateContentHeight();
+}
+
+void TileBrowserWidget::keyPressEvent(QKeyEvent* ev)
+{
+    if (auto* sa = qobject_cast<QScrollArea*>(parentWidget() ? parentWidget()->parentWidget() : nullptr)) {
+        QScrollBar* sb = sa->verticalScrollBar();
+        switch (ev->key()) {
+        case Qt::Key_Home:
+            sb->triggerAction(QAbstractSlider::SliderToMinimum); return;
+        case Qt::Key_End:
+            sb->triggerAction(QAbstractSlider::SliderToMaximum); return;
+        case Qt::Key_PageUp:
+            sb->triggerAction(QAbstractSlider::SliderPageStepSub); return;
+        case Qt::Key_PageDown:
+            sb->triggerAction(QAbstractSlider::SliderPageStepAdd); return;
+        default: break;
+        }
+    }
+    QWidget::keyPressEvent(ev);
 }
 
 // ---------------------------------------------------------------------------

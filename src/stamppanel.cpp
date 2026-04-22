@@ -2,6 +2,7 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <QMouseEvent>
+#include <QScrollBar>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -203,6 +204,17 @@ void StampWidget::keyPressEvent(QKeyEvent* ev)
         update();
         emit stampSelected(nullptr);
         return;
+    }
+    // Forward navigation keys to the parent scroll area
+    if (auto* sa = qobject_cast<QScrollArea*>(parentWidget() ? parentWidget()->parentWidget() : nullptr)) {
+        QScrollBar* sb = sa->verticalScrollBar();
+        switch (ev->key()) {
+        case Qt::Key_Home:   sb->setValue(sb->minimum()); return;
+        case Qt::Key_End:    sb->setValue(sb->maximum()); return;
+        case Qt::Key_PageUp:   sb->setValue(sb->value() - sb->pageStep()); return;
+        case Qt::Key_PageDown: sb->setValue(sb->value() + sb->pageStep()); return;
+        default: break;
+        }
     }
     QWidget::keyPressEvent(ev);
 }
